@@ -1,0 +1,14 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="160" height="128" viewBox="0 0 160 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Illustration">
+<rect id="Base" x="26" y="108" width="108" height="14" rx="6" fill="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<rect id="Neck" x="64" y="96" width="32" height="12" rx="4" fill="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<path id="Button dome" d="M48 96C48 92.5856 48.8277 89.2047 50.4359 86.0502C52.044 82.8958 54.4011 80.0295 57.3726 77.6152C60.3441 75.2009 63.8717 73.2858 67.7541 71.9791C71.6366 70.6725 75.7977 70 80 70C84.2023 70 88.3635 70.6725 92.2459 71.9791C96.1283 73.2858 99.6559 75.2009 102.627 77.6152C105.599 80.0296 107.956 82.8958 109.564 86.0502C111.172 89.2047 112 92.5856 112 96L80 96L48 96Z" fill="#B91C1C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#B91C1C"/>
+<path id="Press marks" d="M59.8571 60L43.7857 55M58.0714 67L42 68M99.1429 60L115.214 55M100.929 67L117 68" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke="#B91C1C"/>
+<g id="Hand">
+<g id="line">
+<path d="M86 62V38L92 44C98 50 107 41 101 35L83 17C81.0791 15.0791 78.9209 14 77 14H65C56.7157 14 50 20.7157 50 29V44C50 47.3137 52.6863 50 56 50C59.3137 50 62 47.3137 62 44V47C62 50.3137 64.6863 53 68 53C71.3137 53 74 50.3137 74 47V62C74 65.3137 76.6863 68 80 68C83.3137 68 86 65.3137 86 62Z" fill="white"/>
+<path d="M74 47V62C74 65.3137 76.6863 68 80 68C83.3137 68 86 65.3137 86 62V38L92 44C98 50 107 41 101 35L83 17C81.0791 15.0791 78.9209 14 77 14H65C56.7157 14 50 20.7157 50 29V44C50 47.3137 52.6863 50 56 50C59.3137 50 62 47.3137 62 44M74 47C74 50.3137 71.3137 53 68 53C64.6863 53 62 50.3137 62 47V44M74 47V38M62 44V38" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+</g>
+</g>
+</g>
+</svg>

@@ -1,0 +1,37 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="297.5" height="217.94" viewBox="0 0 297.5 217.94" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Cab">
+<path id="Cab body" d="M58.48 17.68L95.88 16.32C100.64 16.32 102.68 18.02 103.36 20.74L107.44 59.84V126.48C107.44 129.2 105.74 131.24 103.02 131.24H46.24C43.86 131.24 42.16 129.54 42.16 127.16V63.24C42.16 61.88 43.18 60.86 44.54 60.52L45.9 59.84L48.96 40.8V25.16C48.96 20.74 52.7 18.02 58.48 17.68Z" fill="white" stroke-width="1.02" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<path id="Window opening" d="M55.76 40.8L98.26 39.1C99.62 39.1 100.64 40.12 100.64 41.48L101.66 69.7H52.02L52.7 43.86C52.7 42.16 54.06 40.8 55.76 40.8Z" fill="white" stroke-width="1.02" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<rect id="Door panel" x="50.83" y="70.21" width="50.66" height="53.38" rx="2.89" fill="white" stroke-width="1.02" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<g id="Base slot">
+<path d="M61.2 125.8C61.2 124.673 62.1133 123.76 63.24 123.76H69.36C70.4867 123.76 71.4 124.673 71.4 125.8V131.24H61.2V125.8Z" fill="white"/>
+<mask id="stroke0_0_36" fill="white">
+<path d="M61.2 125.8C61.2 124.673 62.1133 123.76 63.24 123.76H69.36C70.4867 123.76 71.4 124.673 71.4 125.8V131.24H61.2V125.8Z"/>
+</mask>
+<path d="M71.4 131.24V125.8C71.4 124.673 70.4867 123.76 69.36 123.76H63.24C62.1133 123.76 61.2 124.673 61.2 125.8V131.24H71.4Z" stroke-width="2.04" stroke-linecap="round" stroke-linejoin="round" stroke="#262626" mask="url(#stroke0_0_36)"/>
+</g>
+<g id="Base slot_2">
+<path d="M77.52 125.8C77.52 124.673 78.4333 123.76 79.56 123.76H85.68C86.8067 123.76 87.72 124.673 87.72 125.8V131.24H77.52V125.8Z" fill="white"/>
+<mask id="stroke1_0_36" fill="white">
+<path d="M77.52 125.8C77.52 124.673 78.4333 123.76 79.56 123.76H85.68C86.8067 123.76 87.72 124.673 87.72 125.8V131.24H77.52V125.8Z"/>
+</mask>
+<path d="M87.72 131.24V125.8C87.72 124.673 86.8067 123.76 85.68 123.76H79.56C78.4333 123.76 77.52 124.673 77.52 125.8V131.24H87.72Z" stroke-width="2.04" stroke-linecap="round" stroke-linejoin="round" stroke="#262626" mask="url(#stroke1_0_36)"/>
+</g>
+<path id="Side box line" d="M43.52 75.48H48.96" stroke-width="1.02" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<rect id="Seat back" x="52.19" y="62.39" width="7.82" height="6.8" rx="1.19" fill="white" stroke-width="1.02" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<path id="Operator body" d="M64.26 69.7L64.94 62.56C65.28 59.84 67.32 58.14 70.04 58.14C72.76 58.14 74.8 59.84 75.14 62.56L75.82 69.7" fill="white" stroke-width="1.02" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<g id="Operator head">
+<ellipse cx="70.04" cy="52.7" rx="4.76" ry="5.1" fill="white"/>
+<mask id="stroke2_0_36" fill="white">
+<path d="M74.8 52.7C74.8 55.5167 72.6689 57.8 70.04 57.8C67.4111 57.8 65.28 55.5167 65.28 52.7C65.28 49.8834 67.4111 47.6 70.04 47.6C72.6689 47.6 74.8 49.8834 74.8 52.7Z"/>
+</mask>
+<ellipse cx="70.04" cy="52.7" rx="4.76" ry="5.1" stroke-width="2.04" stroke-linecap="round" stroke-linejoin="round" stroke="#262626" mask="url(#stroke2_0_36)"/>
+</g>
+<circle id="Knob" cx="104.04" cy="87.72" r="1.19" fill="white" stroke-width="1.02" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<mask id="stroke3_0_36" maskUnits="userSpaceOnUse" x="39.16" y="13.32" width="71" height="120" fill="black">
+<rect fill="white" x="39.16" y="13.32" width="71" height="120"/>
+<path d="M58.48 17.68L95.88 16.32C100.64 16.32 102.68 18.02 103.36 20.74L107.44 59.84V126.48C107.44 129.2 105.74 131.24 103.02 131.24H46.24C43.86 131.24 42.16 129.54 42.16 127.16V63.24C42.16 61.88 43.18 60.86 44.54 60.52L45.9 59.84L48.96 40.8V25.16C48.96 20.74 52.7 18.02 58.48 17.68Z"/>
+</mask>
+<path id="Cab highlight (interactive-action)" d="M58.48 17.68L95.88 16.32C100.64 16.32 102.68 18.02 103.36 20.74L107.44 59.84V126.48C107.44 129.2 105.74 131.24 103.02 131.24H46.24C43.86 131.24 42.16 129.54 42.16 127.16V63.24C42.16 61.88 43.18 60.86 44.54 60.52L45.9 59.84L48.96 40.8V25.16C48.96 20.74 52.7 18.02 58.48 17.68Z" stroke-width="4.08" stroke-linecap="round" stroke-linejoin="round" stroke="#0F766E" mask="url(#stroke3_0_36)"/>
+</g>
+</svg>

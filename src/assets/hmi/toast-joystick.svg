@@ -1,0 +1,15 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="160" height="128" viewBox="0 0 160 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Illustration">
+<rect id="Base" x="26" y="106" width="108" height="16" rx="6" fill="white" stroke-width="4" stroke="#262626"/>
+<g id="Boot">
+<ellipse cx="80" cy="103" rx="24" ry="11" fill="white"/>
+<mask id="stroke0_0_252" fill="white">
+<path d="M104 103C104 109.075 93.2548 114 80 114C66.7452 114 56 109.075 56 103C56 96.9249 66.7452 92 80 92C93.2548 92 104 96.9249 104 103Z"/>
+</mask>
+<ellipse cx="80" cy="103" rx="24" ry="11" stroke-width="8" stroke="#262626" mask="url(#stroke0_0_252)"/>
+</g>
+<path id="Stick" d="M78 98L100 44" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<circle id="Knob" cx="105" cy="35" r="15" fill="white" stroke-width="4" stroke="#262626"/>
+<path id="Forward arrow" d="M118 74C130 66 138 54 140 40M132 44L140 38L146 47" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#0F766E"/>
+</g>
+</svg>

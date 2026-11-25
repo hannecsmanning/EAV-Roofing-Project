@@ -1,0 +1,42 @@
+/* Same values as tokens.ts, as CSS variables. Pulled from Figma. */
+:root {
+  --text-primary: #0a0a0a;
+  --text-secondary: #262626;
+  --surface-canvas: #ffffff;
+  --surface-neutral: #f5f5f5;
+  --border-divider: #d4d4d4;
+  --border-control: #737373;
+  --neutral-200: #e5e5e5;
+  --action-disabled: #e5e5e5;
+  --interactive-action: #0f766e;
+  --interactive-focus: #0d9488;
+  --feedback-success: #428015;
+  --feedback-warning: #d97706;
+  --feedback-error: #b91c1c;
+  --success-surface: #f0fdf4;
+  --warning-surface: #fffbeb;
+  --warning-text: #92400e;
+  --error-surface: #fef2f2;
+  --action-on: #ffffff;
+  --scrim: rgba(0, 0, 0, 0.48);
+
+  --spacing-2xs: 4px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+  --size-touch-min: 64px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  --elevation-card: 0 4px 10px rgba(0, 0, 0, 0.08);
+  --elevation-toast: 0 -6px 24px rgba(0, 0, 0, 0.22), 0 -1px 4px rgba(0, 0, 0, 0.1);
+
+  --font-words: 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-numbers: 'Roboto Mono', ui-monospace, monospace;
+}

@@ -1,0 +1,15 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="160" height="128" viewBox="0 0 160 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Illustration">
+<path id="Ground" opacity="0.5" d="M4 103H156" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<rect id="Turret" x="60" y="22" width="40" height="14" rx="3" fill="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<circle id="Wheel" cx="56" cy="90" r="10" fill="#262626" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<circle id="Wheel_2" cx="103" cy="90" r="10" fill="#262626" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<path id="Leg" d="M44 57L34 75" stroke-width="4" stroke-linejoin="round" stroke="#0F766E"/>
+<path id="Leg_2" d="M116 57L126 75" stroke-width="4" stroke-linejoin="round" stroke="#0F766E"/>
+<rect id="Left pad" x="20" y="75" width="24" height="8" rx="1" fill="#0F766E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#0F766E"/>
+<rect id="Right pad" x="116" y="75" width="24" height="8" rx="1" fill="#0F766E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#0F766E"/>
+<path id="In arrow L" d="M18.5 67.5L35.5 45M28 47.5L35.5 45L35 53" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<path id="In arrow L_2" d="M140 65.5L123 43M130.5 45.5L123 43L123.5 51" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<rect id="Truck body" x="44" y="36" width="72" height="42" rx="8" fill="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+</g>
+</svg>

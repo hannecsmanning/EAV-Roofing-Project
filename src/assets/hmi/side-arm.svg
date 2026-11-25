@@ -1,0 +1,11 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="316.71" height="252.11" viewBox="0 0 316.71 252.11" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Arm (rotates at bracket)">
+<path id="Boom bar" d="M161.84 117.64L176.8 103.36L316.2 231.88L287.3 251.6L161.84 117.64Z" fill="white" stroke-width="1.02" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<path id="Boom top face" d="M173.74 107.1L312.8 235.28" stroke-width="1.02" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<path id="Upper yoke" d="M164.702 94.8587L177.236 106.344C178.136 107.168 178.197 108.566 177.372 109.466L170.94 116.485C170.116 117.385 168.718 117.446 167.818 116.621L155.284 105.136C154.384 104.312 154.323 102.914 155.148 102.014L161.58 94.995C162.404 94.0951 163.802 94.0341 164.702 94.8587Z" fill="white" stroke-width="1.02" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<path id="Upper yoke slot" d="M163.452 100.719L167.965 104.854C168.311 105.171 168.334 105.709 168.017 106.055L166.869 107.308C166.551 107.654 166.014 107.678 165.668 107.361L161.155 103.226C160.809 102.909 160.786 102.371 161.103 102.025L162.252 100.772C162.569 100.426 163.106 100.402 163.452 100.719Z" fill="white" stroke-width="1.02" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<path id="Rotator" d="M121.08 110.809L147.498 96.762C149.239 95.8363 151.4 96.4972 152.326 98.2381L156.476 106.043C157.402 107.784 156.741 109.946 155 110.871L128.582 124.918C126.841 125.844 124.68 125.183 123.754 123.442L119.604 115.637C118.678 113.896 119.339 111.734 121.08 110.809Z" fill="white" stroke-width="1.02" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+<path id="Rotator band" d="M127.445 106.847L135.426 121.857" stroke-width="1.02" stroke-linecap="round" stroke="#262626"/>
+<path id="Rotator band_2" d="M140.654 99.8233L148.635 114.833" stroke-width="1.02" stroke-linecap="round" stroke="#262626"/>
+</g>
+</svg>

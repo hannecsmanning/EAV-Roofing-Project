@@ -1,0 +1,17 @@
+<svg width="160" height="128" viewBox="0 0 160 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs><filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"/></filter></defs>
+<rect x="18" y="8" width="84" height="68" rx="24" fill="#428015" opacity="0.55" filter="url(#blur)"/>
+<rect x="32" y="12" width="56" height="109" rx="10" fill="white" stroke="#262626" stroke-width="4"/>
+<rect x="42" y="22" width="36" height="40" rx="1" fill="#428015" stroke="#428015" stroke-width="4"/>
+<rect x="42" y="72" width="36" height="40" rx="1" fill="white" stroke="#262626" stroke-width="4"/>
+<path d="M60 32V52" stroke="white" stroke-width="4" stroke-linecap="round"/>
+<circle cx="60" cy="92" r="7" stroke="#262626" stroke-width="4"/>
+<g transform="translate(75 3) rotate(-90 36 36)">
+<g id="Hand">
+<g id="line">
+<path d="M27 15V39L21 33C15 27 6 36 12 42L30 60C31.9209 61.9209 34.0791 63 36 63H48C56.2843 63 63 56.2843 63 48V33C63 29.6863 60.3137 27 57 27C53.6863 27 51 29.6863 51 33V30C51 26.6863 48.3137 24 45 24C41.6863 24 39 26.6863 39 30V15C39 11.6863 36.3137 9 33 9C29.6863 9 27 11.6863 27 15Z" fill="white"/>
+<path d="M39 30V15C39 11.6863 36.3137 9 33 9C29.6863 9 27 11.6863 27 15V39L21 33C15 27 6 36 12 42L30 60C31.9209 61.9209 34.0791 63 36 63H48C56.2843 63 63 56.2843 63 48V33C63 29.6863 60.3137 27 57 27C53.6863 27 51 29.6863 51 33M39 30C39 26.6863 41.6863 24 45 24C48.3137 24 51 26.6863 51 30V33M39 30V39M51 33V39" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke="#262626"/>
+</g>
+</g>
+</g>
+</svg>

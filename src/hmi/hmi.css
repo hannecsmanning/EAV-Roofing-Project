@@ -1,0 +1,221 @@
+/* HMI screens. Built at the Figma size (1280 x 832) and scaled down to fit the tablet frame. */
+
+.hmi-scaler { flex: none; width: 1280px; height: 832px; transform-origin: top left;
+  /* The tablet screen is 738 px wide on the 1920 simulator layout */
+  transform: scale(calc(738 / 1280)); }
+
+/* Type styles from Figma */
+.hmi-readout { font-family: var(--font-numbers); font-weight: 500; font-size: 40px; line-height: 48px; letter-spacing: -1px; color: var(--text-secondary); white-space: nowrap; }
+.hmi-label { font-family: var(--font-words); font-weight: 700; font-size: 29px; line-height: 27px; white-space: nowrap; }
+
+.hmi-card { background: var(--surface-canvas); border: 1px solid var(--border-divider); border-radius: 12px; box-shadow: var(--elevation-card); }
+.hmi-fill { display: block; width: 100%; height: 100%; max-width: none; }
+
+.hmi-screen { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--surface-canvas); }
+
+/* Status bar */
+.hmi-status {
+  flex: none; display: flex; align-items: center; justify-content: space-between;
+  height: 84px; padding: var(--spacing-md); background: var(--surface-neutral);
+}
+.hmi-status__left { display: flex; gap: var(--spacing-xl); }
+.hmi-status__right { display: flex; align-items: center; gap: var(--spacing-md); }
+.hmi-status__wire { width: 65px; height: 65px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; }
+.hmi-battery { display: flex; align-items: center; }
+.hmi-battery__body { background: var(--surface-canvas); border: 3px solid var(--text-secondary); border-radius: 4px; padding: 4px 30px 4px 4px; }
+.hmi-battery__fill {
+  background: var(--text-secondary); color: var(--surface-canvas);
+  padding: 6px 10px; border-radius: 1.5px 3.5px 3.5px 1.5px;
+}
+.hmi-battery__nubs { display: flex; flex-direction: column; justify-content: space-between; width: 5px; height: 37px; }
+.hmi-battery__nubs span { display: block; height: 16px; background: var(--text-secondary); }
+
+/* Body: LMI stack on the left, machine view on the right */
+.hmi-body {
+  flex: 1; min-height: 0; display: flex; gap: var(--spacing-md);
+  padding: var(--spacing-md); background: var(--surface-neutral); overflow: hidden;
+}
+.hmi-lmi {
+  flex: none; width: 124px; height: 100%; padding: var(--spacing-md);
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+}
+.hmi-lmi img { display: block; }
+
+.hmi-machine-view {
+  position: relative; flex: 1; min-width: 0; height: 100%;
+  background: var(--surface-canvas); border-radius: var(--radius-md); overflow: hidden;
+}
+.hmi-live-map { position: absolute; inset: 0; display: block; }
+
+/* Machine · Aerial (filled, folded) */
+.hmi-machine { position: absolute; left: 352px; top: 124px; transform-origin: center; }
+.hmi-aerial { width: 223.334px; height: 440.117px; }
+.hmi-aerial__flip {
+  position: relative; width: 100%; height: 100%; transform: scaleY(-1); isolation: isolate;
+  mask-size: 100% 100%; mask-repeat: no-repeat; -webkit-mask-size: 100% 100%; -webkit-mask-repeat: no-repeat;
+}
+.hmi-aerial__render { position: absolute; inset: 0; overflow: hidden; }
+.hmi-aerial__render img { position: absolute; left: -200%; top: -25.98%; width: 512%; height: 146.14%; max-width: none; }
+.hmi-aerial__tint { position: absolute; inset: 0; background: var(--interactive-action); }
+.hmi-aerial__tint--color { mix-blend-mode: color; }
+.hmi-aerial__tint--multiply { mix-blend-mode: multiply; opacity: 0.35; }
+
+/* Tilt badge */
+.hmi-tilt { display: flex; align-items: center; gap: 12px; padding: 16px 20px 16px 16px; }
+.hmi-tilt img { display: block; }
+.hmi-tilt__value { color: var(--text-primary); }
+.hmi-drive-tilt { position: absolute; top: 24px; right: 24px; }
+
+/* Load badge */
+.hmi-load {
+  display: flex; align-items: center; justify-content: center; padding: var(--spacing-md);
+  background: var(--surface-canvas); border: 3px solid var(--border-control); border-radius: 12px; box-shadow: var(--elevation-card);
+}
+.hmi-drive-load { position: absolute; left: 24px; bottom: 24px; }
+
+/* Operate: truck icon placed over the map (moved from code as the truck drives and the map zooms) */
+.hmi-operate-icon { position: absolute; left: 0; top: 0; transform-origin: center; pointer-events: none; }
+
+/* Zoom buttons (Figma: 104 x 104 at the top right, 15 px apart) */
+.hmi-zoom-buttons { position: absolute; top: 17px; right: 16px; display: flex; flex-direction: column; gap: 15px; }
+.hmi-icon-button {
+  display: flex; align-items: center; justify-content: center; padding: var(--spacing-lg);
+  border: none; border-radius: 12px; background: var(--interactive-action); box-shadow: var(--elevation-card);
+  cursor: pointer;
+}
+.hmi-icon-button img { display: block; }
+.hmi-icon-button:disabled { background: var(--action-disabled); cursor: default; }
+
+/* Toast (Figma "Toast"): 200 px tall, colored bar on top, square top corners, rounded bottom */
+.hmi-toast {
+  position: relative; display: flex; align-items: center; gap: var(--spacing-lg);
+  height: 200px; padding: var(--spacing-lg); overflow: hidden;
+  background: var(--surface-canvas); border-top: 8px solid var(--interactive-action);
+  border-radius: 0 0 8px 8px; box-shadow: var(--elevation-toast);
+  font-family: var(--font-words); font-weight: 700; color: var(--text-primary);
+}
+.hmi-toast--success { background: var(--success-surface); border-top-color: var(--feedback-success); }
+.hmi-toast--warning { background: var(--warning-surface); border-top-color: var(--feedback-warning); color: var(--warning-text); }
+.hmi-toast--danger { background: var(--error-surface); border-top-color: var(--feedback-error); }
+/* Loading: no solid bar. A 10 px teal band with white stripes sliding right, 80 px every 2 s. */
+.hmi-toast--loading { border-top: none; padding-top: var(--spacing-xxl); }
+.hmi-toast__stripes {
+  position: absolute; left: 0; right: 0; top: 0; height: 10px;
+  background: repeating-linear-gradient(135deg, var(--action-on) 0 10px, var(--interactive-action) 10px 28.28px);
+  animation: hmi-stripes 2s linear infinite;
+}
+@keyframes hmi-stripes { from { background-position: 0 0; } to { background-position: 80px 0; } }
+
+.hmi-toast__icon { flex: none; display: block; }
+.hmi-toast__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--spacing-2xs); }
+.hmi-toast__text p { margin: 0; }
+/* Field/Heading/Page */
+.hmi-toast__title { font-size: 40px; line-height: 48px; letter-spacing: -1px; }
+/* Field/Heading/Section */
+.hmi-toast__message { font-size: 24px; line-height: 32px; }
+/* Button, Primary: 200 x 64, Field/Label/Touch */
+.hmi-toast__button {
+  flex: none; width: 200px; height: var(--size-touch-min); padding: 0 var(--spacing-lg);
+  border: none; border-radius: var(--radius-md); background: var(--interactive-action); color: var(--action-on);
+  font-family: var(--font-words); font-weight: 700; font-size: 29px; line-height: 27px; cursor: pointer;
+}
+
+/* Where toasts sit on a screen: over the bottom of the machine view (Figma "Toast slot": 1108 x 200 at 156, 616) */
+.hmi-screen { position: relative; }
+.hmi-toast-slot { position: absolute; left: 156px; top: 616px; width: 1108px; z-index: 2; }
+/* Figma: the Load badge sits 216 px from the bottom while a toast shows */
+.hmi-drive-load--above-toast { bottom: 216px; }
+/* Toast picture (Figma "Toast picture frame"): 240 x 152, illustration 160 x 128 at 40, 12 */
+.hmi-toast__picture { position: relative; flex: none; width: 240px; height: 152px; }
+.hmi-toast__picture img { position: absolute; left: 40px; top: 12px; display: block; }
+
+/* Pick a spot: destination dot (Truck location ring, Type=Destination) and the Truck indicator pill */
+.hmi-destination { position: absolute; left: 0; top: 0; display: none; pointer-events: none; }
+.hmi-truck-indicator {
+  position: absolute; left: 0; top: 0; display: none; align-items: center; gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-sm) var(--spacing-md);
+  background: var(--surface-canvas); border: 3px solid var(--interactive-focus); border-radius: var(--radius-full);
+  font-family: var(--font-words); font-weight: 700; font-size: 29px; line-height: 27px; color: var(--interactive-focus);
+  pointer-events: none; z-index: 1;
+}
+.hmi-truck-indicator img { display: block; }
+.hmi-live-map { cursor: pointer; }
+
+/* Cab height panel (Figma "Cab height panel"): 420 x 370 card at the machine view's top left */
+.hmi-cab-panel {
+  position: absolute; left: 24px; top: 16px; width: 420px; height: 370px; z-index: 1; overflow: hidden;
+  background: var(--surface-canvas); border: 1px solid var(--border-divider); border-radius: 12px; box-shadow: var(--elevation-card);
+}
+.hmi-cab-panel p { margin: 0; position: absolute; white-space: nowrap; }
+/* Field/Metadata */
+.hmi-cab-panel__meta { font-family: var(--font-words); font-weight: 500; font-size: 16px; line-height: 24px; color: var(--text-secondary); }
+.hmi-cab-panel__label { left: 19px; top: 15px; }
+.hmi-cab-panel__readout { left: 19px; top: 37px; color: var(--text-primary); }
+.hmi-cab-panel__status { left: 19px; top: 91px; }
+.hmi-cab-panel__roof { position: absolute; left: 0; top: 227px; width: 140px; height: 122px; background: var(--neutral-200); }
+.hmi-cab-panel__ground { position: absolute; left: -1px; top: 349px; width: 420px; height: 30px; background: var(--surface-neutral); }
+.hmi-cab-panel__ground-line { position: absolute; left: -1px; top: 346px; width: 420px; height: 3px; display: block; }
+.hmi-cab-panel__ledge-line { position: absolute; left: 0; top: 224px; width: 400px; height: 3px; display: block; }
+.hmi-cab-panel__ledge-label { left: 299px; top: 201px; color: var(--interactive-action); }
+.hmi-cab-panel__ground-target { position: absolute; left: -1px; top: 347px; width: 420px; height: 4px; background: var(--interactive-action); }
+.hmi-cab-panel__ground-label { left: 151px; top: 323px; color: var(--interactive-action); }
+/* Side view · Cab close-up: 297.5 x 217.94, moves up with the cab */
+.hmi-cab-panel__closeup { position: absolute; left: 198px; width: 297.5px; height: 217.94px; overflow: hidden; }
+.hmi-cab-panel__arm { position: absolute; inset: 0 -6.46% -15.68% 0; }
+.hmi-cab-panel__cab { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hmi-cab-panel__bracket {
+  position: absolute; left: 104.04px; top: 112.88px; width: 18.36px; height: 12.24px; transform: rotate(64deg);
+  background: var(--surface-canvas); border: 1.02px solid var(--text-secondary); border-radius: 2.72px;
+}
+
+/* Distance pill (Figma): white pill, 2 px teal border, Field/Metadata in teal */
+.hmi-distance-pill {
+  position: absolute; left: 0; top: 0; display: none; pointer-events: none; white-space: nowrap; z-index: 1;
+  padding: 6px 12px; background: var(--surface-canvas); border: 2px solid var(--interactive-action); border-radius: var(--radius-full);
+  font-family: var(--font-words); font-weight: 500; font-size: 16px; line-height: 24px; color: var(--interactive-action);
+}
+.hmi-cab-panel__object { position: absolute; display: block; }
+.hmi-cab-panel__object-label { color: var(--warning-text); }
+
+/* Status chips (Figma "Boom chip", "Speed chip"): amber pill, 28 px icon, Field/Label/Touch in warning text */
+.hmi-status-chip {
+  display: flex; align-items: center; gap: var(--spacing-xs); padding: 10px 20px 10px 16px;
+  background: var(--warning-surface); border: 2px solid var(--feedback-warning); border-radius: var(--radius-full);
+  color: var(--warning-text);
+}
+.hmi-status-chip img { display: block; }
+
+/* Tilt badge, Warning */
+.hmi-tilt--warning { background: var(--warning-surface); border: 2px solid var(--feedback-warning); }
+.hmi-tilt--warning .hmi-tilt__value { color: var(--warning-text); }
+
+/* Load badge, Overweight: amber, weight with "Max 1,000 LB" under it */
+.hmi-load--over { flex-direction: column; align-items: flex-start; background: var(--warning-surface); border: 2px solid var(--feedback-warning); }
+.hmi-load--over .hmi-readout { color: var(--warning-text); }
+.hmi-load__max { font-family: var(--font-words); font-weight: 500; font-size: 16px; line-height: 24px; color: var(--warning-text); }
+/* Operate: Tilt badge under + and − (Figma: 15 px below the buttons) */
+.hmi-operate-tilt { position: absolute; right: 16px; top: 256px; }
+
+/* Map lock (Figma "Map lock"): over the map, under the + and − buttons and the cab height panel */
+.hmi-map-lock { position: absolute; inset: 0; background: var(--scrim); }
+.hmi-map-lock__badge {
+  position: absolute; left: 50%; top: calc(50% - 60px); transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: var(--spacing-md);
+}
+.hmi-map-lock__circle {
+  width: 144px; height: 144px; display: flex; align-items: center; justify-content: center;
+  background: var(--surface-canvas); border: 3px solid var(--border-control); border-radius: var(--radius-full);
+}
+.hmi-map-lock__label { margin: 0; font-family: var(--font-words); font-weight: 700; font-size: 24px; line-height: 32px; color: var(--surface-canvas); white-space: nowrap; }
+
+/* Material spot (Figma "Material spot"): 80 px pin with a 44 px package icon. Default white, Selected teal. */
+.hmi-material-pin {
+  position: absolute; left: 0; top: 0; width: 80px; height: 80px; padding: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-canvas); border: 2px solid var(--border-control); border-radius: var(--radius-full);
+  box-shadow: var(--elevation-card);
+}
+.hmi-material-pin__icon--selected { display: none; }
+.hmi-material-pin--selected { background: var(--interactive-action); border: 4px solid var(--interactive-action); }
+.hmi-material-pin--selected .hmi-material-pin__icon { display: none; }
+.hmi-material-pin--selected .hmi-material-pin__icon--selected { display: block; }

@@ -1,0 +1,11 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="45.8271" height="46.2568" viewBox="0 0 45.8271 46.2568" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path id="Detected object" d="M20.4961 0C23.7943 0.000121344 26.7912 1.28232 29.0225 3.37207C29.6429 3.27716 30.2789 3.22852 30.9258 3.22852C37.8181 3.22877 43.4053 8.81663 43.4053 15.709C43.4052 16.6856 43.2923 17.6358 43.0801 18.5479C44.7972 20.6858 45.8271 23.3999 45.8271 26.3555C45.8269 31.9906 42.0914 36.7518 36.9619 38.3018C35.1496 42.9566 30.6278 46.2566 25.332 46.2568C22.0338 46.2568 19.036 44.9753 16.8047 42.8857C16.1844 42.9806 15.5492 43.0303 14.9023 43.0303C8.00999 43.0303 2.42213 37.4431 2.42188 30.5508C2.42188 29.5731 2.53346 28.621 2.74609 27.708C1.02955 25.5703 0.000108714 22.8572 0 19.9023C0 14.2672 3.73493 9.5043 8.86426 7.9541C10.6767 3.29946 15.2003 0 20.4961 0Z" fill="url(#paint0_radial_0_4)"/>
+<defs>
+<radialGradient id="paint0_radial_0_4" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(22.9136) scale(45.8272 46.2569)">
+<stop stop-color="#C7401A"/>
+<stop offset="0.35" stop-color="#ED8C26"/>
+<stop offset="0.7" stop-color="#F7CC8C"/>
+<stop offset="1" stop-color="#DBDBDB"/>
+</radialGradient>
+</defs>
+</svg>
