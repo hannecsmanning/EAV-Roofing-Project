@@ -8,8 +8,14 @@ import {
 } from './siteLayout'
 import { isInside, squareDistance } from './roofShape'
 import { useSim } from '../store'
+import { toonGradient, roofGradient, grassPattern, shinglePattern, SHINGLE_TILE_M } from './look'
+import { Nature } from './Nature'
 
-// Step 1 of the Simulator plan: the 3D map. Simple shapes only.
+// Step 1 of the Simulator plan: the 3D map. Simple shapes, in a soft toy-like autumn look (look.ts, Nature.tsx).
+
+const Toon = ({ c, ...rest }: { c: string } & Partial<THREE.MeshToonMaterialParameters>) => (
+  <meshToonMaterial color={c} gradientMap={toonGradient} {...rest} />
+)
 
 // ---------- Ground with the steep slope ----------
 function Ground() {
@@ -35,9 +41,16 @@ function Ground() {
     return g
   }, [])
 
+  // The faint triangle pattern repeats about every 4 m.
+  const pattern = useMemo(() => {
+    const t = grassPattern.clone()
+    t.repeat.set(50, 50)
+    t.needsUpdate = true
+    return t
+  }, [])
   return (
     <mesh geometry={geometry} receiveShadow>
-      <meshStandardMaterial vertexColors />
+      <meshToonMaterial vertexColors map={pattern} gradientMap={toonGradient} />
     </mesh>
   )
 }
@@ -86,8 +99,31 @@ function buildRoof(top: boolean) {
   const g = new THREE.BufferGeometry()
   g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
   g.setIndex(indices)
-  g.computeVertexNormals()
-  return g
+  if (!top) {
+    g.computeVertexNormals()
+    return g
+  }
+  // The top: every triangle gets its own corners, so each roof face is shaded flat (crisp hips and valleys), and
+  // shingle UVs that run along the eave (u) and up the slope (v) for whichever way that face slopes.
+  const flat = g.toNonIndexed()
+  flat.computeVertexNormals()
+  const p = flat.attributes.position
+  const n = flat.attributes.normal
+  const uv: number[] = []
+  const up = 1 / Math.cos((HOUSE.pitchDeg * Math.PI) / 180) // meters along the slope per meter across the ground
+  for (let i = 0; i < p.count; i++) {
+    const nx = n.getX(i)
+    const nz = n.getZ(i)
+    const x = p.getX(i)
+    const z = p.getZ(i)
+    // A face sloping down toward ±z has its eave along x; toward ±x, along z.
+    const alongX = Math.abs(nz) >= Math.abs(nx)
+    const u = alongX ? x : z
+    const v = (alongX ? z * Math.sign(nz || 1) : x * Math.sign(nx || 1)) * up
+    uv.push(u / SHINGLE_TILE_M, -v / SHINGLE_TILE_M)
+  }
+  flat.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2))
+  return flat
 }
 
 function House() {
@@ -106,36 +142,64 @@ function House() {
   return (
     <group>
       <mesh geometry={walls} castShadow receiveShadow>
-        <meshStandardMaterial color={scene.wall} />
+        <Toon c={scene.wall} />
       </mesh>
       <group position={[0, HOUSE.wallHeight, 0]}>
+        {/* Shingled roof, with stronger light steps so the faces away from the sun read darker */}
         <mesh geometry={roof} castShadow receiveShadow>
-          <meshStandardMaterial color={scene.roof} flatShading />
+          <meshToonMaterial color={scene.roof} map={shinglePattern} gradientMap={roofGradient} />
         </mesh>
         <mesh geometry={soffit}>
-          <meshStandardMaterial color={scene.wall} />
+          <Toon c={scene.trim} />
         </mesh>
       </group>
-      {/* Front door and windows, so you can tell front from back */}
+      {/* Front door and windows, so you can tell front from back. Each has a light trim frame. */}
       <group position={[0, 0, frontZ]}>
-        <mesh position={[0, 1.05, 0]}>
-          <planeGeometry args={[1, 2.1]} />
-          <meshStandardMaterial color={scene.trim} />
+        {/* Door with its frame and a low step */}
+        <mesh position={[0, 1.12, 0.01]}>
+          <boxGeometry args={[1.3, 2.35, 0.06]} />
+          <Toon c={scene.trim} />
         </mesh>
-        {[-2.8, -1.6, 1.6, 2.8].map((x) => (
-          <mesh key={x} position={[x, 1.7, 0]}>
-            <planeGeometry args={[0.9, 1]} />
-            <meshStandardMaterial color={scene.window} />
-          </mesh>
-        ))}
+        <mesh position={[0, 1.05, 0.05]}>
+          <boxGeometry args={[1, 2.1, 0.04]} />
+          <Toon c={scene.door} />
+        </mesh>
+        <mesh position={[0.32, 1.05, 0.09]}>
+          <sphereGeometry args={[0.05, 10, 8]} />
+          <Toon c={scene.trim} />
+        </mesh>
+        <mesh position={[0, 0.06, 0.3]} castShadow receiveShadow>
+          <boxGeometry args={[1.6, 0.12, 0.6]} />
+          <Toon c={scene.trim} />
+        </mesh>
+        {[-2.8, -1.6, 1.6, 2.8].map((x) => <Window key={x} x={x} y={1.7} />)}
         {/* Second floor: a row of windows, including one above the door */}
-        {[-2.8, -1.6, 0, 1.6, 2.8].map((x) => (
-          <mesh key={`up${x}`} position={[x, HOUSE.wallHeight - 1.6, 0]}>
-            <planeGeometry args={[0.9, 1]} />
-            <meshStandardMaterial color={scene.window} />
-          </mesh>
-        ))}
+        {[-2.8, -1.6, 0, 1.6, 2.8].map((x) => <Window key={`up${x}`} x={x} y={HOUSE.wallHeight - 1.6} />)}
       </group>
+    </group>
+  )
+}
+
+/** A window with a light frame, a cross bar and a sill. */
+function Window({ x, y }: { x: number; y: number }) {
+  return (
+    <group position={[x, y, 0]}>
+      <mesh position={[0, 0, 0.01]}>
+        <boxGeometry args={[1.08, 1.18, 0.05]} />
+        <Toon c={scene.trim} />
+      </mesh>
+      <mesh position={[0, 0, 0.04]}>
+        <boxGeometry args={[0.9, 1, 0.03]} />
+        <Toon c={scene.window} />
+      </mesh>
+      <mesh position={[0, 0, 0.06]}>
+        <boxGeometry args={[0.05, 1, 0.02]} />
+        <Toon c={scene.trim} />
+      </mesh>
+      <mesh position={[0, -0.6, 0.08]}>
+        <boxGeometry args={[1.2, 0.07, 0.16]} />
+        <Toon c={scene.trim} />
+      </mesh>
     </group>
   )
 }
@@ -180,6 +244,8 @@ const LUMPS: [number, number, number, number][] = [
   [-0.2, 0.85, -0.1, 0.5],
 ]
 
+// Chunky, rounded clumps (smooth, not faceted), in muted autumn olive. Same size and spot as before: they're the
+// obstacles the heat map and Object detection use.
 function Bush({ o }: { o: Obstacle }) {
   const y = groundHeight(o.x, o.z)
   const s = o.radius
@@ -188,21 +254,47 @@ function Bush({ o }: { o: Obstacle }) {
     <group position={[o.x, y, o.z]} scale={[s, h, s]}>
       {LUMPS.map(([x, ly, z, r], i) => (
         <mesh key={i} position={[x, ly, z]} castShadow receiveShadow>
-          <icosahedronGeometry args={[r, 1]} />
-          <meshStandardMaterial color={i % 2 ? scene.bushDark : scene.bush} flatShading />
+          <icosahedronGeometry args={[r * 1.05, 3]} />
+          <Toon c={i % 2 ? scene.bushDark : scene.bush} />
         </mesh>
       ))}
     </group>
   )
 }
 
+// Wooden posts with a rounded cap. The mailbox post carries a little mailbox, the lamp post a lamp.
+// The post itself keeps its size, since that's what the truck can hit.
 function Post({ o }: { o: Obstacle }) {
   const y = groundHeight(o.x, o.z)
   return (
-    <mesh position={[o.x, y + o.height / 2, o.z]} castShadow>
-      <cylinderGeometry args={[o.radius, o.radius, o.height, 12]} />
-      <meshStandardMaterial color={scene.post} />
-    </mesh>
+    <group position={[o.x, y, o.z]}>
+      <mesh position={[0, o.height / 2, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[o.radius, o.radius * 1.15, o.height, 12]} />
+        <Toon c={scene.post} />
+      </mesh>
+      <mesh position={[0, o.height, 0]} castShadow>
+        <sphereGeometry args={[o.radius * 1.25, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <Toon c={scene.postCap} />
+      </mesh>
+      {o.id === 'post-mailbox' && (
+        <group position={[0, o.height + 0.12, 0]}>
+          <mesh castShadow>
+            <boxGeometry args={[0.26, 0.24, 0.45]} />
+            <Toon c={scene.mailbox} />
+          </mesh>
+          <mesh position={[0, 0.12, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <cylinderGeometry args={[0.13, 0.13, 0.45, 12, 1, false, 0, Math.PI]} />
+            <Toon c={scene.mailbox} />
+          </mesh>
+        </group>
+      )}
+      {o.id === 'post-lamp' && (
+        <mesh position={[0, o.height + 0.15, 0]} castShadow>
+          <sphereGeometry args={[0.2, 14, 10]} />
+          <meshToonMaterial color={scene.lamp} gradientMap={toonGradient} emissive={scene.lamp} emissiveIntensity={0.35} />
+        </mesh>
+      )}
+    </group>
   )
 }
 
@@ -272,7 +364,7 @@ function MaterialSpot() {
     <group>
       <mesh position={[m.x, 0.01, m.z]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[m.width, m.depth]} />
-        <meshStandardMaterial color={scene.gravel} />
+        <Toon c={scene.gravel} />
       </mesh>
     </group>
   )
@@ -301,6 +393,7 @@ export function Site() {
       {OBSTACLES.map((o) => (o.kind === 'bush' ? <Bush key={o.id} o={o} /> : <Post key={o.id} o={o} />))}
       <MaterialSpot />
       <Loads />
+      <Nature />
     </>
   )
 }

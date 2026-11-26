@@ -2,14 +2,16 @@
 //   1 · On the wire, the Material spot shows on the map left of the house, joined to the wire by a short branch.
 //   2 · Tap it: it turns teal. Action toast "Machine will drive to materials. Allow?" After Allow, a Loading toast
 //       with the joystick picture: "Push the joystick forward to move."
-//   3 · Holding the joystick (W): "Driving along the wire..." along the house wire, then out along the branch.
+//   3 · Holding the joystick (W): "Machine driving to new placement..." along the house wire, then out along the branch.
 //       The route ahead shows dotted. (Raised, the machine folds first; outriggers down, it asks to retract them.)
 //   4 · Arrived: "Arrived at materials." with a sound, for 1.5 s.
 //   5 · The operator loads the forks (L). Too heavy: the Overweight load alert.
 //   6 · Going back is a normal Pick a spot: the truck backs down the branch, then rides the house wire.
 // The run starts from the Operate zone map and the truck stays folded the whole way.
+import { releaseJoystickFirst } from '../keys'
 import { useSim, NO_RUN, NO_PICK } from '../store'
-import { isHeld } from '../keys'
+import { joystickHeld, joystickPicture } from './tablet'
+import { isDismounted } from '../store'
 import { playChime } from '../sound'
 import { BRANCH_LENGTH } from '../scene/siteLayout'
 import { JUNCTION_S, bestRoute, routeLength } from '../scene/wireTrack'
@@ -29,7 +31,7 @@ let speed = 0
 let lastTick = 0
 
 const clearOwnToast = () => {
-  if (useSim.getState().toast?.id === TOAST) useSim.getState().clearToast()
+  useSim.getState().clearToast(TOAST)
 }
 
 /** From Allow until the truck arrives. */
@@ -54,7 +56,8 @@ function allow() {
   if (s.run.phase !== 'tapped') return
   speed = 0
   useSim.setState({ run: { ...s.run, phase: 'joystick' } })
-  s.showToast({ id: TOAST, type: 'Loading', title: 'Push the joystick forward to move.', picture: joystick })
+  // A dismounted tablet has no joystick: the machine just goes, and the next Loading toast shows right away.
+  if (!isDismounted(s.tablet)) s.showToast({ id: TOAST, type: 'Loading', title: 'Push the joystick forward to move.', picture: joystick })
 }
 
 /** Before Allow: tapping a zone or zooming drops the picked Material spot. */
@@ -71,8 +74,8 @@ function setPhase(phase: 'descending' | 'driving') {
   s.showToast({
     id: TOAST,
     type: 'Loading',
-    title: phase === 'descending' ? 'Machine descending...' : 'Driving along the wire...',
-    picture: joystick,
+    title: phase === 'descending' ? 'Machine descending...' : 'Machine driving to new placement...',
+    picture: joystickPicture(joystick),
   })
 }
 
@@ -88,7 +91,7 @@ export function tickMaterialRun(): number | null {
   const dt = lastTick ? Math.min(0.1, (now - lastTick) / 1000) : 0
   lastTick = now
   if (!runIsMoving(run.phase) || movementLocked()) return null
-  const held = s.mode !== 'walking' && isHeld('w')
+  const held = joystickHeld()
   const legsDown = s.outriggers.state !== 'up'
 
   if (run.phase === 'joystick') {
@@ -131,9 +134,11 @@ export function tickMaterialRun(): number | null {
 
 function arrive() {
   const s = useSim.getState()
+  // Done: a joystick still held from the move does nothing until it's let go (Hanne).
+  releaseJoystickFirst()
   speed = 0
   useSim.setState({ run: NO_RUN })
-  s.setCabZone(null) // the cab is no longer over the roof
+  s.setCabSpot(null) // the cab is no longer over the roof
   s.showToast({ id: TOAST, type: 'Success', title: 'Arrived at materials.' })
   playChime('success')
   setTimeout(() => {

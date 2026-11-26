@@ -9,7 +9,9 @@ import { useSim, type PickPhase } from '../../store'
 import { color } from '../../tokens/tokens'
 import { MAP_PX_PER_M } from '../../scene/roofShape'
 import { pointAt, routePoints, routeLength, poseOnWire, branchPoints, JUNCTION_S } from '../../scene/wireTrack'
-import { zoneRect, zoneAt, sameZone, SMALL_ZONE_M, type Zone } from '../../scene/zones'
+import { zoneRect, zoneAt, sameZone, zoneOutlineD, zoneFillD, zoneCenterOnRoof, SMALL_ZONE_M, type Zone } from '../../scene/zones'
+import { zoneKindForZoom } from '../../flows/pickASpot'
+import type { Spot } from '../../store'
 import { useLmiLevel, limitReach } from '../../flows/lmi'
 import { lmiLocked } from '../../flows/lmiAlerts'
 import { tapMap, pickIsMoving } from '../../flows/pickASpot'
@@ -116,14 +118,15 @@ function paramsFor(key: ViewKey): Params {
     anchor: key === 3 && mapView.focus ? FOCUS_ANCHOR : ANCHOR[key],
     focus:
       key === 1
-        ? [(ROOF_BOX.minX + ROOF_BOX.maxX) / 2, (ROOF_BOX.minZ + ROOF_BOX.maxZ) / 2]
+        ? [(ROOF_BOX.minX + ROOF_BOX.maxX) / 2 + mapView.pan.x, (ROOF_BOX.minZ + ROOF_BOX.maxZ) / 2 + mapView.pan.z]
         : key === 3 && mapView.focus
           ? [zoneMiddle(mapView.focus)[0] + mapView.pan.x, zoneMiddle(mapView.focus)[1] + mapView.pan.z]
           : [truck.x + mapView.pan.x, truck.z + mapView.pan.z],
     ringPx: { 1: 4, 2: 5, 3: 6 }[key],
-    // On the wire: big zones on the zone map, small-zone lines zoomed in. Off the wire: small zones only fully zoomed in.
-    bigGrid: onWire && key === 1 ? 1 : 0,
-    smallGrid: key === 3 || (onWire && key === 2) ? 1 : 0,
+    // Big zone lines stand out on the zone map (on the wire) and at the middle zoom (doc). Small zones at the middle
+    // zoom and zoomed in, on or off the wire, since that's where they can be picked (Hanne, 2026-11-25).
+    bigGrid: key === 2 || (onWire && key === 1) ? 1 : 0,
+    smallGrid: key === 1 ? 0 : 1,
     // Off the wire, the zone map shows no wire line.
     wire: onWire || key !== 1 ? 1 : 0,
     band: key === 1 ? 0 : 1,
@@ -132,13 +135,26 @@ function paramsFor(key: ViewKey): Params {
 
 /** The middle of a zone, in world meters. */
 function zoneMiddle(zone: Zone): [number, number] {
-  const r = zoneRect(zone)
-  return [r.x + r.size / 2, r.z + r.size / 2]
+  const c = zoneCenterOnRoof(zone)
+  return [c.x, c.z]
 }
 
 const pathD = (pts: { x: number; z: number }[]) => (pts.length ? 'M' + pts.map((p) => `${p.x.toFixed(2)},${p.z.toFixed(2)}`).join('L') : '')
 
-export function OperateMap({ view, zoom, focusZone = null, dim = true }: { view: ViewKey; zoom: ZoomLevel; focusZone?: Zone | null; dim?: boolean }) {
+export function OperateMap({
+  view,
+  zoom,
+  focusZone = null,
+  dim = true,
+  onZoomStep,
+}: {
+  view: ViewKey
+  zoom: ZoomLevel
+  focusZone?: Zone | null
+  dim?: boolean
+  /** Pinch or scroll over the map: +1 zooms in one level, -1 zooms out (the same as + and −). */
+  onZoomStep?: (dir: 1 | -1) => void
+}) {
   mapView.focus = focusZone
   const world = useRef<SVGGElement>(null)
   const bigGrid = useRef<SVGGElement>(null)
@@ -288,10 +304,10 @@ export function OperateMap({ view, zoom, focusZone = null, dim = true }: { view:
   const wireState = useSim((s) => s.wire)
   const pick = useSim((s) => s.pick)
   const run = useSim((s) => s.run)
-  const cabZone = useSim((s) => s.cabZone)
+  const cabSpot = useSim((s) => s.cabSpot)
   useEffect(() => {
     draw.current()
-  }, [wireState, pick, cabZone, run, focusZone])
+  }, [wireState, pick, cabSpot, run, focusZone])
 
   // Follow the truck as it moves or turns.
   useEffect(() => {
@@ -305,9 +321,10 @@ export function OperateMap({ view, zoom, focusZone = null, dim = true }: { view:
     return m ? new DOMPoint(clientX, clientY).matrixTransform(m.inverse()) : null
   }
 
-  // Pull and drag to pan the map, zoomed in (doc: "Pull and drag to pan the map"). A short press is still a tap.
+  // Pull and drag to pan the map at every zoom level, including inside a drilled-in big zone (Hanne). Not in the
+  // route view, which shows the move on its own. A short press is still a tap.
   const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null)
-  const canPan = view === 2 || (view === 3 && !(focusZone && dim))
+  const canPan = view !== 'route'
   const onPointerDown = (e: React.PointerEvent) => {
     drag.current = { x: e.clientX, y: e.clientY, moved: false }
   }
@@ -339,6 +356,29 @@ export function OperateMap({ view, zoom, focusZone = null, dim = true }: { view:
     setTimeout(() => (drag.current = null))
   }
 
+  // Pinch (a trackpad pinch arrives as a scroll with Ctrl) or scroll over the map: one zoom level per gesture,
+  // like + and − (doc: "zooms with the teal + and − buttons, or by pinching").
+  const svg = useRef<SVGSVGElement>(null)
+  const zoomStep = useRef(onZoomStep)
+  zoomStep.current = onZoomStep
+  useEffect(() => {
+    const el = svg.current
+    if (!el) return
+    let acc = 0
+    let last = 0
+    const wheel = (e: WheelEvent) => {
+      e.preventDefault()
+      acc += e.deltaY * (e.ctrlKey ? 4 : 1)
+      const now = performance.now()
+      if (Math.abs(acc) < 60 || now - last < 350) return
+      zoomStep.current?.(acc < 0 ? 1 : -1)
+      acc = 0
+      last = now
+    }
+    el.addEventListener('wheel', wheel, { passive: false })
+    return () => el.removeEventListener('wheel', wheel)
+  }, [])
+
   // Tap the map to pick a zone (Pick a spot).
   const onTap = (e: React.MouseEvent) => {
     if (drag.current?.moved) return
@@ -352,6 +392,7 @@ export function OperateMap({ view, zoom, focusZone = null, dim = true }: { view:
   return (
     <>
       <svg
+        ref={svg}
         className="hmi-live-map"
         width="100%"
         height="100%"
@@ -376,7 +417,7 @@ export function OperateMap({ view, zoom, focusZone = null, dim = true }: { view:
               <LiveMachine ref={live} gRef={liveG} />
             </>
           }
-          onRoof={<><RiskTint />{focusZone && dim && <FocusOutline zone={focusZone} />}<RoofZones onWire={wireState === 'connected'} cabZone={cabZone} picked={pick.zone} phase={pick.phase} /></>}
+          onRoof={<><RiskTint />{focusZone && dim && <FocusOutline zone={focusZone} />}<RoofZones cabSpot={cabSpot} zoom={zoom} picked={pick.zone} phase={pick.phase} /></>}
           overWire={
             <>
               <LedgeHint />
@@ -409,23 +450,22 @@ export function OperateMap({ view, zoom, focusZone = null, dim = true }: { view:
 }
 
 /** The green cab zone ("cab is here") and the picked zone (Tapped, then Confirming). Clipped to the roof. */
-function RoofZones({ onWire, cabZone, picked, phase }: { onWire: boolean; cabZone: Zone | null; picked: Zone | null; phase: PickPhase }) {
+// The cab zone shows on and off the wire: the big zone around the cab on the zone map, the small zone at the middle
+// zoom and zoomed in (the same kind of zone that can be picked there). Merged edge zones highlight their whole shape.
+function RoofZones({ cabSpot, zoom, picked, phase }: { cabSpot: Spot | null; zoom: ZoomLevel; picked: Zone | null; phase: PickPhase }) {
+  const cabZone = cabSpot ? zoneAt(zoneKindForZoom(zoom), cabSpot.x, cabSpot.z) : null
   return (
     <>
-      {onWire && cabZone && (
+      {cabZone && (
         // Cab zone, Fill=Soft: success green at 55%.
-        <rect {...xywh(zoneRect(cabZone))} fill={color.feedbackSuccess} fillOpacity={0.55} />
+        <path d={zoneFillD(cabZone)} fill={color.feedbackSuccess} fillOpacity={0.55} />
       )}
       {picked && (
         // Selected zone: Tapped = 20% teal fill, Confirming = solid teal. 6 px interactive-action outline.
-        <rect
-          {...xywh(zoneRect(picked))}
-          fill={color.interactiveAction}
-          fillOpacity={phase === 'tapped' ? 0.2 : 1}
-          stroke={color.interactiveAction}
-          strokeWidth={6}
-          vectorEffect="non-scaling-stroke"
-        />
+        <>
+          <path d={zoneFillD(picked)} fill={color.interactiveAction} fillOpacity={phase === 'tapped' ? 0.2 : 1} />
+          <path d={zoneOutlineD(picked)} fill="none" stroke={color.interactiveAction} strokeWidth={6} strokeLinecap="square" vectorEffect="non-scaling-stroke" />
+        </>
       )}
     </>
   )
@@ -484,12 +524,11 @@ function RiskTint() {
 // The big zone is outlined in interactive-action (6 px), clipped to the roof edge, and the rest of the map is dimmed
 // with a 60% white layer.
 function FocusOutline({ zone }: { zone: Zone }) {
-  return <rect {...xywh(zoneRect(zone))} fill="none" stroke={color.interactiveAction} strokeWidth={6} vectorEffect="non-scaling-stroke" />
+  return <path d={zoneOutlineD(zone)} fill="none" stroke={color.interactiveAction} strokeWidth={6} strokeLinecap="square" vectorEffect="non-scaling-stroke" />
 }
 function FocusDim({ zone }: { zone: Zone }) {
-  const r = zoneRect(zone)
   const far = 1000 // meters: well past the edge of the map
-  // A huge rectangle with the big zone cut out of it.
-  const d = `M${-far},${-far}H${far}V${far}H${-far}Z M${r.x},${r.z}V${r.z + r.size}H${r.x + r.size}V${r.z}Z`
+  // A huge rectangle with the big zone (and any slivers merged into it) cut out of it.
+  const d = `M${-far},${-far}H${far}V${far}H${-far}Z ${zoneFillD(zone)}`
   return <path d={d} fill={color.surfaceCanvas} fillOpacity={0.6} fillRule="evenodd" pointerEvents="none" />
 }

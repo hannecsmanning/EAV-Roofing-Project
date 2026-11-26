@@ -18,7 +18,10 @@
   --warning-text: #92400e;
   --error-surface: #fef2f2;
   --action-on: #ffffff;
+  --action-secondary: #f5f5f5;
   --scrim: rgba(0, 0, 0, 0.48);
+  --screen-off: #141414;
+  --idle-dim: rgba(255, 255, 255, 0.5);
 
   --spacing-2xs: 4px;
   --spacing-xs: 8px;

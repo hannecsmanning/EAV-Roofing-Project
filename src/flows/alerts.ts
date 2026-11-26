@@ -27,7 +27,7 @@ function successToast(title: string, message: string) {
   s.showToast({ id: TOAST, type: 'Success', title, message })
   clearTimeout(successTimer)
   successTimer = setTimeout(() => {
-    if (useSim.getState().toast?.id === TOAST && useSim.getState().toast?.type === 'Success') useSim.getState().clearToast()
+    if (useSim.getState().toast?.id === TOAST && useSim.getState().toast?.type === 'Success') useSim.getState().clearToast(TOAST)
   }, SUCCESS_MS)
 }
 
@@ -92,7 +92,7 @@ function tickObjects() {
     s.showToast({ id: OBJECT_TOAST, type: 'Warning', title: 'Object detected.', message: `Slowing to creep speed. Check ${where}.` })
     if (!was.object) playChime('warning')
   } else if (s.toast?.id === OBJECT_TOAST) {
-    s.clearToast()
+    s.clearToast(OBJECT_TOAST)
   }
 }
 

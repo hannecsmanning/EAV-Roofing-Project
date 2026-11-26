@@ -31,12 +31,16 @@ export const FOLDED: MachinePose = { turretYaw: 0, lowerPitch: 0, upperPitch: 0,
 /** Distance along the machine from its back bumper, turned into the model's z. */
 export const fromBack = (d: number) => MACHINE_DESIGN.length / 2 - d
 
-/** The turret pivot, under the rounded cover. */
-export const TURRET = { x: 0.35, y: 1.95, z: fromBack(1.7) }
-export const LOWER_BOOM = 1.3
+/** The turnstile (turret): the long rounded housing turns on a ring on the chassis, 90° each way, carrying the boom
+ *  (Figma "Machine References": "Turnstile rotates 180 degrees"). This is its turning point, in the middle of the
+ *  housing, at the height of the boom channel on top. */
+export const TURRET = { x: 0, y: 1.95, z: fromBack(1.7) }
+/** The lower boom hinges at the back end of the housing ("Hinges here"), this far behind the turning point. */
+export const HINGE_BACK = 1.2
+export const LOWER_BOOM = 1.3 + HINGE_BACK
 export const UPPER_BOOM = 2.6
-/** The boom tip when folded: the boom lies flat along the top, ending at the cab's front corner. */
-export const FOLDED_TIP = { x: TURRET.x, y: TURRET.y, z: TURRET.z - LOWER_BOOM - UPPER_BOOM }
+/** The boom tip when folded: the boom lies flat in the channel on top of the housing, ending at the cab's front corner. */
+export const FOLDED_TIP = { x: TURRET.x, y: TURRET.y, z: TURRET.z - (LOWER_BOOM + UPPER_BOOM - HINGE_BACK) }
 /** Where the cab floor's middle sits relative to the boom tip (turns with the turret).
  *  Folded, the cab rests on the deck behind the tip. Raised, the jib swings it out in front of the tip,
  *  like the Operate renders: the boom meets the back of the cab. */

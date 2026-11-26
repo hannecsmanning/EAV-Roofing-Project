@@ -31,7 +31,7 @@ const toast = (t: Parameters<ReturnType<typeof useSim.getState>['showToast']>[0]
 function success(title: string, message: string) {
   toast({ type: 'Success', title, message })
   successTimer = setTimeout(() => {
-    if (useSim.getState().toast?.id === TOAST) useSim.getState().clearToast()
+    useSim.getState().clearToast(TOAST)
   }, SUCCESS_MS)
 }
 

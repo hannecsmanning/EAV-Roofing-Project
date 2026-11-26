@@ -1,6 +1,7 @@
 import { Fragment } from 'react'
 import { useSim, type Mode } from '../store'
 import { Keycap } from './Keycap'
+import { canSwitchFromRoof } from '../flows/outriggers'
 
 // Key list comes from the Simulator plan in docs/CONTEXT.md and the Figma Controls panel.
 type Row = { keys: string[]; label: string }
@@ -18,7 +19,7 @@ const modeKeys: Record<Mode, { title: string; rows: Row[] }> = {
       { keys: ['9'], label: 'Ascend to ledge' },
       { keys: ['0'], label: 'Descend (retract machine)' },
       { keys: ['P'], label: 'Start button' },
-      { keys: ['H'], label: 'Detach tablet' },
+      { keys: ['H'], label: 'Take off or put back tablet' },
     ],
   },
   operate: {
@@ -28,10 +29,11 @@ const modeKeys: Record<Mode, { title: string; rows: Row[] }> = {
       { keys: ['↑', '↓'], label: 'Cab up and down' },
       { keys: ['W'], label: 'Hold: joystick forward' },
       { keys: ['B'], label: 'LMI button' },
+      { keys: ['P'], label: 'Start button' },
       { keys: ['O'], label: 'Outrigger switch' },
       { keys: ['9'], label: 'Ascend to ledge' },
       { keys: ['0'], label: 'Descend (retract machine)' },
-      { keys: ['H'], label: 'Detach tablet' },
+      { keys: ['H'], label: 'Take off or put back tablet' },
     ],
   },
   forks: {
@@ -80,6 +82,8 @@ export function ControlsPanel() {
   }
 
   const current = modeKeys[mode]
+  // On the roof with the dismounted tablet, the outrigger switch works too.
+  const rows = canSwitchFromRoof(useSim.getState()) ? [...current.rows, { keys: ['O'], label: 'Outrigger switch' }] : current.rows
   return (
     <div className="controls">
       <div className="controls__header">
@@ -107,7 +111,7 @@ export function ControlsPanel() {
         <div className="controls__divider" />
         <div className="controls__col controls__col--grid">
           <div className="controls__label controls__span">{current.title}</div>
-          {current.rows.map((r, i) => (
+          {rows.map((r, i) => (
             <Fragment key={i}>
               <span className="controls__keys">
                 {r.keys.map((k) => (

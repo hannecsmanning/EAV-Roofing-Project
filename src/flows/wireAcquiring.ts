@@ -28,8 +28,8 @@ let acquireFrom = { x: 0, z: 0, heading: 0 }
 let acquireStart = 0
 
 const clearOwnToasts = () => {
-  const id = useSim.getState().toast?.id
-  if (id === TOAST_NEARBY || id === TOAST_FLOW) useSim.getState().clearToast()
+  useSim.getState().clearToast(TOAST_NEARBY)
+  useSim.getState().clearToast(TOAST_FLOW)
 }
 
 /** Called every frame: is the truck close enough and lined up to connect? */
@@ -50,7 +50,7 @@ export function updateWireAvailability() {
     s.showToast({ id: TOAST_NEARBY, type: 'Step', title: 'Wire nearby.', message: 'Press the wire button to connect to the wire.' })
     playChime('info')
   } else if (s.wire === 'off' && s.toast?.id === TOAST_NEARBY) {
-    s.clearToast()
+    s.clearToast(TOAST_NEARBY)
   }
 }
 
@@ -92,7 +92,7 @@ export function pressWireButton() {
       later.showToast({ id: TOAST_FLOW, type: 'Success', title: 'Connected to the wire.', message: 'Use Pick a spot to drive to any spot along the wire.' })
       playChime('success')
       setTimeout(() => {
-        if (useSim.getState().toast?.id === TOAST_FLOW && useSim.getState().wire === 'connected') useSim.getState().clearToast()
+        if (useSim.getState().wire === 'connected') useSim.getState().clearToast(TOAST_FLOW)
       }, SUCCESS_TOAST_MS)
     }, CONNECT_MS)
   }, SEARCH_MS)

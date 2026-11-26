@@ -219,3 +219,54 @@
 .hmi-material-pin--selected { background: var(--interactive-action); border: 4px solid var(--interactive-action); }
 .hmi-material-pin--selected .hmi-material-pin__icon { display: none; }
 .hmi-material-pin--selected .hmi-material-pin__icon--selected { display: block; }
+
+/* Status bar, Dismounted = on: teal pill with the open lock, 3 px teal border, white */
+.hmi-status-chip--dismounted {
+  padding: var(--spacing-xs) var(--spacing-md) var(--spacing-xs) var(--spacing-sm);
+  background: var(--surface-canvas); border: 3px solid var(--interactive-focus); color: var(--interactive-focus);
+}
+
+/* PIN keypad (Figma "PIN keypad"): centered on the Map lock, 104 x 72 keys, 12 px gaps */
+.hmi-pin {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: var(--spacing-lg); padding: var(--spacing-lg);
+  background: var(--surface-canvas); border: 1px solid var(--border-divider); border-radius: 12px; box-shadow: var(--elevation-card);
+}
+.hmi-pin__title { margin: 0; font-family: var(--font-words); font-weight: 700; font-size: 24px; line-height: 32px; color: var(--text-primary); white-space: nowrap; }
+.hmi-pin__dots { display: flex; gap: var(--spacing-md); height: 24px; align-items: center; }
+.hmi-pin__dot { width: 24px; height: 24px; border-radius: var(--radius-full); border: 2px solid var(--border-control); box-sizing: border-box; }
+.hmi-pin__dot--on { background: var(--interactive-action); border-color: var(--interactive-action); }
+.hmi-pin__keys { display: grid; grid-template-columns: repeat(3, 104px); gap: var(--spacing-sm); }
+.hmi-pin__key {
+  height: 72px; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  background: var(--action-secondary); border: 2px solid var(--border-control); border-radius: var(--radius-md);
+  font-family: var(--font-words); font-weight: 700; font-size: 24px; line-height: 32px; color: var(--text-primary);
+}
+.hmi-pin__key--digit { font-family: var(--font-numbers); font-weight: 500; font-size: 40px; line-height: 48px; letter-spacing: -1px; }
+.hmi-pin__key--unlock { background: var(--interactive-action); border-color: var(--interactive-action); color: var(--action-on); }
+
+/* Power: start-up check card (Figma "Start-up check"): 420 wide, centered across, 163 px from the top of the map */
+.hmi-startup {
+  position: absolute; left: 50%; top: 163px; transform: translateX(-50%); width: 420px; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 18px; padding: var(--spacing-lg) 28px;
+  background: var(--surface-canvas); border: 1px solid var(--border-divider); border-radius: 12px; box-shadow: var(--elevation-card);
+}
+.hmi-startup__title { margin: 0; font-family: var(--font-words); font-weight: 700; font-size: 24px; line-height: 32px; color: var(--text-primary); }
+.hmi-startup__row { display: flex; align-items: center; gap: 14px; color: var(--text-primary); }
+.hmi-spin { animation: hmi-spin 1s linear infinite; }
+@keyframes hmi-spin { to { transform: rotate(360deg); } }
+
+/* Power: idle dim (white 50% over the map), and the screen when the machine is off */
+.hmi-idle-dim { position: absolute; inset: 0; background: var(--idle-dim); pointer-events: none; }
+.hmi-screen-off { position: absolute; inset: 0; background: var(--screen-off); cursor: pointer; }
+
+/* Status bar, Idle chip: white pill, 3 px border-control, moon icon */
+.hmi-status-chip--idle {
+  padding: var(--spacing-xs) var(--spacing-md) var(--spacing-xs) var(--spacing-sm);
+  background: var(--surface-canvas); border: 3px solid var(--border-control); color: var(--text-secondary);
+}
+
+/* Tilt badge (Hanne): bottom right of the map, mirroring the Load badge on the left. It moves up above a toast
+   the same way, so the toast never covers it. */
+.hmi-tilt-corner { position: absolute; right: 24px; bottom: 24px; }
+.hmi-tilt-corner--above-toast { bottom: 216px; }

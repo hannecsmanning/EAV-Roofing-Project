@@ -1,9 +1,12 @@
 import { useEffect, useRef } from 'react'
+import { OperatorFigure, type WalkState } from './OperatorFigure'
+import { skyGradient } from './look'
+import { roofMove, operatorHeight } from '../flows/roofWalk'
 import { useFrame, useThree } from '@react-three/fiber'
 import { view, attachViewControls } from './cameraView'
 import * as THREE from 'three'
 import { isHeld } from '../keys'
-import { useSim, type Speed } from '../store'
+import { useSim, isDismounted, type Speed } from '../store'
 import { color, scene } from '../tokens/tokens'
 import { Site } from './Site'
 import { Machine } from './Machine'
@@ -66,15 +69,19 @@ function Truck() {
   useFrame((_, dt) => {
     const truck = ref.current
     if (!truck) return
-    // Ascend and Retract move the boom while the joystick is held; otherwise Operate mode keys move the cab.
-    tickOutriggers(dt)
-    tickLift(dt)
-    tickPickBoom(dt)
-    tickMachine(dt)
-    tickLmi(dt)
-    tickForks(dt)
-    // Alerts from the real tilt and load (uneven ground, overweight).
-    tickAlerts()
+    // Off, starting up or idle, the machine is locked in place (docs/CONTEXT.md "Power on, idle and off").
+    const on = useSim.getState().power === 'on'
+    if (on) {
+      // Ascend and Retract move the boom while the joystick is held; otherwise Operate mode keys move the cab.
+      tickOutriggers(dt)
+      tickLift(dt)
+      tickPickBoom(dt)
+      tickMachine(dt)
+      tickLmi(dt)
+      tickForks(dt)
+      // Alerts from the real tilt and load (uneven ground, overweight).
+      tickAlerts()
+    }
     const { mode, speed, truck: at, truckHeading, setTruck, setTruckHeading, wire, wireS, wireDir, setWire } = useSim.getState()
     // The truck drives only in Drive mode, folded, and not while Ascend or Retract uses the joystick (W).
     const { machineRaised, lift } = useSim.getState()
@@ -91,6 +98,13 @@ function Truck() {
       truck.rotation.y = h
       const tilt = Math.round(groundTiltDeg(x, z))
       if (tilt !== useSim.getState().tiltDeg) useSim.getState().setTilt(tilt)
+    }
+    if (!on) {
+      vel.current.set(0, 0)
+      turnVel.current = 0
+      alongVel.current = 0
+      place(at.x, at.z, truckHeading)
+      return
     }
 
     // Wire flow: the truck holds still while searching, slides onto the wire while connecting,
@@ -146,7 +160,9 @@ function Truck() {
           return
         }
         // Otherwise W slides forward along the wire, S slides back. Drive mode only, at the chosen speed.
-        const input = driving ? (isHeld('w') ? 1 : 0) - (isHeld('s') ? 1 : 0) : 0
+        // Not while Pick a spot or the material run is going: then W is their joystick (it can start in Drive mode).
+        const flowBusy = pickIsMoving(useSim.getState().pick.phase) || runIsMoving(useSim.getState().run.phase)
+        const input = driving && !flowBusy ? (isHeld('w') ? 1 : 0) - (isHeld('s') ? 1 : 0) : 0
         const target = input * TRUCK_TOP_SPEED[eff]
         const rate = Math.abs(target) < Math.abs(alongVel.current) ? TRUCK_BRAKE : TRUCK_ACCEL
         alongVel.current += THREE.MathUtils.clamp(target - alongVel.current, -rate * dt, rate * dt)
@@ -225,16 +241,17 @@ function Truck() {
 // The operator: a blank, soft figure (a bit like a Smiski). Only shows when out of the truck.
 function Operator() {
   const ref = useRef<THREE.Group>(null)
-  const body = useRef<THREE.Group>(null)
   const vel = useRef(new THREE.Vector2())
   const facing = useRef(0)
-  const stride = useRef(0)
+  const walk = useRef<WalkState>({ stride: 0, moving: 0 })
   const mode = useSim((s) => s.mode)
+  // Carrying the dismounted tablet in both hands.
+  const holding = useSim((s) => isDismounted(s.tablet))
 
   useFrame(({ camera }, dt) => {
     const g = ref.current
     if (!g || mode !== 'walking') return
-    const { operator: at, truck, truckHeading, setOperator } = useSim.getState()
+    const { operator: at, truck, truckHeading, setOperator, operatorOnRoof } = useSim.getState()
 
     // W walks away from the camera, whichever way the camera faces.
     const look = camera.getWorldDirection(new THREE.Vector3())
@@ -245,8 +262,13 @@ function Operator() {
 
     let now = at
     if (vel.current.lengthSq() > 0) {
-      const truckBody = truckCircles(truck, truckHeading)
-      now = slideMove(at, vel.current.x * dt, vel.current.y * dt, (s) => isBlocked([operatorCircle(s)], truckBody))
+      if (operatorOnRoof) {
+        // On the roof: the edge is a force field, and the cab is in the way.
+        now = roofMove(at, vel.current.x * dt, vel.current.y * dt)
+      } else {
+        const truckBody = truckCircles(truck, truckHeading)
+        now = slideMove(at, vel.current.x * dt, vel.current.y * dt, (s) => isBlocked([operatorCircle(s)], truckBody))
+      }
       if (now !== at) setOperator(now)
     }
 
@@ -257,36 +279,20 @@ function Operator() {
       diff = Math.atan2(Math.sin(diff), Math.cos(diff))
       facing.current += diff * (1 - Math.exp(-12 * dt))
     }
-    // A small bob while walking.
+    // Walking: the figure steps and bobs with the stride.
     const moving = vel.current.length() / WALK_SPEED
-    stride.current += dt * 9 * moving
-    if (body.current) body.current.position.y = Math.abs(Math.sin(stride.current)) * 0.06 * moving
+    walk.current.moving = moving
+    walk.current.stride += dt * 9 * moving
 
-    g.position.set(now.x, groundHeight(now.x, now.z), now.z)
+    g.position.set(now.x, operatorHeight(now, operatorOnRoof), now.z)
     g.rotation.y = facing.current
   })
 
   if (mode !== 'walking') return null
-  const { x, z } = useSim.getState().operator
+  const { operator, operatorOnRoof } = useSim.getState()
   return (
-    <group ref={ref} position={[x, groundHeight(x, z), z]}>
-      <group ref={body}>
-        {/* Body: a soft rounded bean */}
-        <mesh position={[0, 0.62, 0]} castShadow>
-          <capsuleGeometry args={[0.26, 0.5, 6, 16]} />
-          <meshStandardMaterial color={scene.operator} roughness={0.8} />
-        </mesh>
-        {/* Head */}
-        <mesh position={[0, 1.38, 0]} castShadow>
-          <sphereGeometry args={[0.27, 24, 16]} />
-          <meshStandardMaterial color={scene.operator} roughness={0.8} />
-        </mesh>
-        {/* A small nose bump so you can see which way they face */}
-        <mesh position={[0, 1.36, 0.25]}>
-          <sphereGeometry args={[0.05, 12, 8]} />
-          <meshStandardMaterial color={scene.operator} roughness={0.8} />
-        </mesh>
-      </group>
+    <group ref={ref} position={[operator.x, operatorHeight(operator, operatorOnRoof), operator.z]}>
+      <OperatorFigure walk={walk} tablet={holding} />
     </group>
   )
 }
@@ -302,10 +308,11 @@ function CameraRig() {
   useEffect(() => attachViewControls(gl.domElement), [gl])
 
   useFrame(({ camera }, dt) => {
-    const { mode, truck, truckHeading, operator } = useSim.getState()
+    const { mode, truck, truckHeading, operator, operatorOnRoof } = useSim.getState()
     const walking = mode === 'walking'
     const who = walking ? operator : truck
-    const ground = new THREE.Vector3(who.x, groundHeight(who.x, who.z), who.z)
+    const feet = walking ? operatorHeight(operator, operatorOnRoof) : groundHeight(who.x, who.z)
+    const ground = new THREE.Vector3(who.x, feet, who.z)
 
     // Swing smoothly toward the truck's heading (the short way around).
     if (!walking) {
@@ -351,18 +358,23 @@ function CameraRig() {
 export function World() {
   return (
     <>
-      <color attach="background" args={[scene.sky]} />
-      <fog attach="fog" args={[scene.sky, 40, 120]} />
-      <hemisphereLight args={[scene.skyLight, scene.groundLight, 0.9]} />
+      {/* Hazy autumn sky, warm at the horizon; the fog fades distant things into that warm haze */}
+      <primitive attach="background" object={skyGradient} />
+      <fog attach="fog" args={[scene.skyHorizon, 55, 150]} />
+      {/* Warm afternoon sun, lower in the sky, with warm light bouncing up from the grass */}
+      <hemisphereLight args={[scene.skyLight, scene.groundLight, 0.85]} />
       <directionalLight
-        position={[20, 30, 15]}
-        intensity={1.4}
+        position={[30, 26, 22]}
+        color={scene.sun}
+        intensity={1.5}
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-40}
-        shadow-camera-right={40}
-        shadow-camera-top={40}
-        shadow-camera-bottom={-40}
+        shadow-camera-left={-60}
+        shadow-camera-right={60}
+        shadow-camera-top={60}
+        shadow-camera-bottom={-60}
+        shadow-camera-far={160}
+        shadow-bias={-0.0004}
       />
 
       <Site />

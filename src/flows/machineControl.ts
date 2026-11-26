@@ -10,11 +10,11 @@
 import { useSim, type Spot } from '../store'
 import { isHeld } from '../keys'
 import {
-  MACHINE_SCALE, FOLDED, FOLDED_TIP, TURRET, LOWER_BOOM, UPPER_BOOM, CAB_HALF, LIMITS, JIB_SWING_HEIGHT, cabFromTip,
+  MACHINE_SCALE, FOLDED, FOLDED_TIP, TURRET, HINGE_BACK, LOWER_BOOM, UPPER_BOOM, CAB_HALF, LIMITS, JIB_SWING_HEIGHT, cabFromTip,
   type MachinePose,
 } from '../scene/machineSpec'
 import { groundHeight, houseHeightAt } from '../scene/siteLayout'
-import { zoneAt } from '../scene/zones'
+import { zoneAt, sameZone } from '../scene/zones'
 import { cabSpeed } from './alerts'
 import { lmiFrac, DEPLOY_FRAC, LIMIT_FRAC } from './lmi'
 import { lmiAtLimit } from './lmiAlerts'
@@ -38,18 +38,20 @@ export function solvePose(tip: Vec, prevYaw: number): MachinePose | null {
   const r = Math.hypot(dx, dz)
   // The boom points along (-sin yaw, -cos yaw) on the ground.
   const turretYaw = r > 0.2 ? Math.atan2(-dx, -dz) : prevYaw
-  const d = Math.hypot(r, dy)
+  // The lower boom hinges behind the turning point (at the back of the housing), in line with the boom.
+  const rh = r + HINGE_BACK
+  const d = Math.hypot(rh, dy)
   const reach = LOWER_BOOM + UPPER_BOOM
   let lower: number
   let upper: number
   let extend = 0
   if (d >= reach) {
-    lower = upper = Math.atan2(dy, r)
+    lower = upper = Math.atan2(dy, rh)
     extend = d - reach
   } else {
     const c = (LOWER_BOOM ** 2 + d ** 2 - UPPER_BOOM ** 2) / (2 * LOWER_BOOM * d)
-    lower = Math.atan2(dy, r) + Math.acos(Math.max(-1, Math.min(1, c)))
-    upper = Math.atan2(dy - LOWER_BOOM * Math.sin(lower), r - LOWER_BOOM * Math.cos(lower))
+    lower = Math.atan2(dy, rh) + Math.acos(Math.max(-1, Math.min(1, c)))
+    upper = Math.atan2(dy - LOWER_BOOM * Math.sin(lower), rh - LOWER_BOOM * Math.cos(lower))
   }
   // The jib swings the cab out in front of the tip as it lifts off the deck.
   const jib = Math.max(0, Math.min(1, (tip.y - FOLDED_TIP.y) / JIB_SWING_HEIGHT))
@@ -131,9 +133,13 @@ export function setTip(tip: Vec, pose: MachinePose) {
   if (!folded) {
     const cab = cabWorld()
     const onRoof = houseHeightAt(cab.x, cab.z) > 0
-    const zone = onRoof ? zoneAt('big', cab.x, cab.z) : null
-    const prev = s.cabZone
-    if (!zone || !prev || zone.col !== prev.col || zone.row !== prev.row || prev.kind !== 'big') s.setCabZone(zone)
+    // Only store a new spot when the cab crosses into another small zone, so the map doesn't redraw every frame.
+    const prev = s.cabSpot
+    if (!onRoof) {
+      if (prev) s.setCabSpot(null)
+    } else if (!prev || !sameZone(zoneAt('small', cab.x, cab.z), zoneAt('small', prev.x, prev.z))) {
+      s.setCabSpot({ x: cab.x, z: cab.z })
+    }
   }
 }
 

@@ -8,7 +8,7 @@
 //     with the Switch retract picture → flip → Loading "Retracting outriggers..." → Success.
 //     Fully retract (0) does this as its step 3, then ends in Drive mode.
 // From the stop until the legs finish moving, the map shows "Movement locked" and + and − are disabled.
-import { useSim } from '../store'
+import { useSim, isDismounted } from '../store'
 import { playChime } from '../sound'
 import { lmiFrac, DEPLOY_FRAC } from './lmi'
 import { lmiLocked } from './lmiAlerts'
@@ -69,7 +69,8 @@ export function askRetract(by: 'drive' | 'lift' = 'drive') {
 /** The O key: the outrigger switch. */
 export function flipSwitch() {
   const s = useSim.getState()
-  if (s.mode === 'walking') return
+  // Out of the cab, the switch only works on the roof with the dismounted tablet (Hanne, 2026-11-25).
+  if (s.mode === 'walking' && !canSwitchFromRoof(s)) return
   const o = s.outriggers
   if (o.state === 'deploying' || o.state === 'retracting') return
   if (o.state === 'up') {
@@ -85,6 +86,10 @@ export function flipSwitch() {
   if (!o.ask) askedBy = 'drive'
   startMoving('retracting')
 }
+
+/** Walking on the roof with the dismounted tablet: the outrigger switch (O) works from there too. */
+export const canSwitchFromRoof = (s: ReturnType<typeof useSim.getState>) =>
+  s.mode === 'walking' && s.operatorOnRoof && isDismounted(s.tablet)
 
 function startMoving(state: 'deploying' | 'retracting') {
   const s = useSim.getState()
@@ -121,6 +126,6 @@ export function tickOutriggers(dt: number) {
     message: 'Continue operation.',
   })
   successTimer = setTimeout(() => {
-    if (useSim.getState().toast?.id === TOAST) useSim.getState().clearToast()
+    useSim.getState().clearToast(TOAST)
   }, SUCCESS_MS)
 }

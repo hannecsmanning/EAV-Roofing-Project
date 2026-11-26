@@ -70,7 +70,7 @@ body { font-family: var(--font-words); color: var(--text-primary); background: #
   padding: 15px; border-radius: 28px; background: var(--text-secondary);
 }
 .tablet__screen {
-  width: 100%; height: 100%; border-radius: 6px; overflow: hidden;
+  position: relative; width: 100%; height: 100%; border-radius: 6px; overflow: hidden;
   background: var(--surface-neutral); display: flex; flex-direction: column;
 }
 .tablet__body {
@@ -89,4 +89,11 @@ body { font-family: var(--font-words); color: var(--text-primary); background: #
 .context-prompt--warning {
   padding: var(--spacing-sm) var(--spacing-lg);
   background: var(--warning-surface); border: 2px solid var(--feedback-warning); color: var(--warning-text);
+}
+
+/* The turn-on prompt sits centered under the dark HMI tablet (768 wide, 48 px from the right, 510 tall from 48 px down),
+   so the open Controls panel never covers it. */
+.context-prompt--tablet {
+  left: auto; bottom: auto; right: calc(var(--spacing-xxl) + 384px); top: calc(var(--spacing-xxl) + 510px + var(--spacing-lg));
+  transform: translateX(50%); white-space: nowrap;
 }

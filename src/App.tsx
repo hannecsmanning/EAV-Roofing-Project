@@ -5,7 +5,7 @@ import { Stage } from './ui/Stage'
 import { ModeChip } from './ui/ModeChip'
 import { ControlsPanel } from './ui/ControlsPanel'
 import { HmiTablet } from './hmi/HmiTablet'
-import { useSim } from './store'
+import { useSim, isDismounted } from './store'
 import { canGetIn, getOutSpot } from './scene/collision'
 import { pressWireButton } from './flows/wireAcquiring'
 import { pressAscend, pressRetract } from './flows/ascendRetract'
@@ -13,6 +13,9 @@ import { ContextPrompt } from './ui/ContextPrompt'
 import { flipSwitch } from './flows/outriggers'
 import { pressL } from './flows/forks'
 import { resetView } from './scene/cameraView'
+import { pressH, putBack } from './flows/tablet'
+import { roofStepOut, canGetInFromRoof } from './flows/roofWalk'
+import { pressStart, wake, touch, JOYSTICK_KEYS } from './flows/power'
 
 function useModeKeys() {
   useEffect(() => {
@@ -22,8 +25,21 @@ function useModeKeys() {
       // The arrow keys move the cab, so they shouldn't scroll the page.
       if (e.key.startsWith('Arrow')) e.preventDefault()
       if (e.repeat) return
-      const { mode, truck, truckHeading, operator, machineRaised, setMode, setOperator, cycleSpeed, toggleControls, showBlocked } = useSim.getState()
-      switch (e.key.toLowerCase()) {
+      const { mode, truck, truckHeading, operator, machineRaised, setMode, setOperator, cycleSpeed, toggleControls, showBlocked, power } = useSim.getState()
+      const k = e.key.toLowerCase()
+      // P is the physical Start button in the cab: screen on, start, or turn off.
+      if (k === 'p') {
+        if (mode !== 'walking') pressStart()
+        return
+      }
+      if (mode !== 'walking') {
+        // Moving a joystick wakes the machine from idle (and only wakes it).
+        if (power === 'idle' && JOYSTICK_KEYS.includes(k)) return wake()
+        touch()
+      }
+      // Until the machine is on, only getting in or out, the Controls panel and the view keys work.
+      if (power !== 'on' && !['4', 'k', 'c'].includes(k)) return
+      switch (k) {
         // Drive mode needs the machine folded (doc: "The machine must be fully stowed").
         case '1':
           if (mode === 'walking') break
@@ -38,18 +54,34 @@ function useModeKeys() {
         case '0': pressRetract(); break
         case 'o': flipSwitch(); break
         case 'l': pressL(); break
-        // 4 gets out next to the cab, or back in when standing close to the truck.
-        // Raised, getting out is blocked (doc). Stepping out onto the roof comes later.
-        case '4':
+        case 'h': pressH(); break
+        // 4 gets out next to the cab, or back in when standing close to it.
+        // Raised, the operator can only step out onto the roof, when the cab is at it (doc: "If the machine is raised
+        // and not over the roof, getting out is blocked").
+        case '4': {
+          const onRoof = useSim.getState().operatorOnRoof
           if (mode !== 'walking' && machineRaised) {
-            showBlocked('Get to the roof or ground.')
+            const spot = roofStepOut()
+            if (!spot) showBlocked('Get to the roof or ground.')
+            else {
+              setOperator(spot)
+              useSim.setState({ operatorOnRoof: true })
+              setMode('walking')
+            }
           } else if (mode !== 'walking') {
             setOperator(getOutSpot(truck, truckHeading))
+            useSim.setState({ operatorOnRoof: false })
             setMode('walking')
-          } else if (canGetIn(operator, truck, truckHeading)) {
-            setMode('drive')
+          } else if (onRoof ? canGetInFromRoof(operator) : canGetIn(operator, truck, truckHeading)) {
+            // Getting back in clips a dismounted tablet back onto the truck. From the roof the cab is up: Operate mode.
+            putBack()
+            useSim.setState({ operatorOnRoof: false })
+            setMode(machineRaised ? 'operate' : 'drive')
+          } else if (onRoof) {
+            showBlocked('Walk to the cab to get in.')
           }
           break
+        }
         case 'k': toggleControls(); break
         case 'c': resetView(); break
       }
@@ -62,8 +94,9 @@ function useModeKeys() {
 export default function App() {
   useModeKeys()
   const mode = useSim((s) => s.mode)
-  // The HMI shows when the operator is in the truck. Holding the detached tablet comes later.
-  const showHmi = mode !== 'walking'
+  // The HMI shows when the operator is in the truck, or walking with the tablet. It closes when they walk without it.
+  const holding = useSim((s) => isDismounted(s.tablet))
+  const showHmi = mode !== 'walking' || holding
 
   return (
     <>

@@ -33,7 +33,7 @@ These rules come from the notes in the Week 9 and Week 10 wireframes and from wh
   3. Title: just the Field/Heading/Page title.
 - Title and Message are shared text fields. The text stays when you switch a toast's Type or Content.
 
-  Toast timing: all toasts show for about 1.5 seconds, then hide. The exception is any toast the operator must respond to, like an Action toast with Allow or Cancel, which stays until tapped. Lasting state is carried by the map, chips, badges and LMI lights, and sounds back up the toasts.
+  Toast timing: all toasts show for about 1.5 seconds, then hide. The exception is any toast the operator must respond to, like an Action toast with Allow or Cancel, which stays until tapped. Lasting state is carried by the map, chips, badges and LMI lights, and sounds back up the toasts. If an alert (Warning or Danger) pops up during a move, it covers the move's Loading toast for as long as it shows, then the Loading toast comes back.
 
   Any toast can show a picture on the right (Show picture + Picture, 240 x 152). The picture is the Toast picture frame component set to Floating, with an Illustration inside it. Danger toasts use this slot for the LMI button instead of a built-in picture.
 
@@ -109,12 +109,12 @@ From the moment the machine stops at the limit until the move is done, the map i
 - A white grid splits the roof into zones. Each big zone splits into 4 by 4 small zones.
 - There are 3 zoom levels:
   1. Zone map: the whole roof with big zones only.
-  2. Zooming in: big zones get bigger and faint small zones start to show.
+  2. Zooming in: big zones get bigger and faint small zones start to show. Small zones can be picked here, the same as fully zoomed in.
   3. Zoomed in: small zones. All grid lines are the same width (2px), so big zone lines don't stand out here. They only stand out on the zone map and the middle zoom.
-- The operator zooms with the teal + and − buttons in the top right, or by pinching. There is no map button. Each tap moves one zoom level, and the map zooms smoothly (300ms, ease out). At the limits the button turns gray and does nothing: − on the zone map, + when fully zoomed in. This uses the new Button Type=Icon, State=Disabled variant.
+- The operator zooms with the teal + and − buttons in the top right, or by pinching. There is no map button. Each tap moves one zoom level, and the map zooms smoothly (300ms, ease out). At the limits the button turns gray and does nothing: − on the zone map, + when fully zoomed in. This uses the new Button Type=Icon, State=Disabled variant. In the simulator, a trackpad pinch or a mouse scroll over the map steps one zoom level the same way, and is locked whenever + and − are. Dragging pans the map at every zoom level, including inside a drilled-in big zone, and on the Drive screen map (the truck icon moves with it). The Drive screen map has no zoom levels, so a pinch or scroll there zooms it smoothly around the truck, and the zoom stays while driving. It also has the teal + and − buttons in the top right (each tap zooms 1.5 times in or out, gray at the limits and while the map is locked). The Tilt badge moved to the bottom right. The map comes back to the truck when you zoom or a move starts, and on the Drive screen as soon as the truck moves.
 
   The cab zone uses the Cab zone component. Its Zoom option matches the zoom level, and Fill is always Soft (50%).
-- The Cab zone component marks the zone the cab is in: the big zone on the zone map and middle zoom, and the small zone when zoomed in. It is success green, always Soft (50%) on screens.
+- The Cab zone component marks the zone the cab is in: the big zone on the zone map, and the small zone at the middle zoom and when zoomed in (the same kind of zone that can be picked there). It shows on and off the wire. It is success green, always Soft (50%) on screens.
 - The machine uses the Machine · Aerial component, filled with the primary teal. It has Extended and Folded states. The boom can be Center, Left 25, Left 45, Right 25, Right 45 or Center extended. The truck stays in the same spot for every boom option.
 - The Truck location ring component has a Type option. Type=Truck marks where the truck is now, with one size per zoom level: 70px, 155px and 300px. Type=Destination marks where the truck will stop on the wire in Pick a spot. It has one look at every zoom level, including the route view: a big success green dot with a white edge and a soft green halo (120px).
 - Zones never go past the roof. Edge zones are clipped to the roof outline, so they can be smaller than a full square. A clipped zone smaller than half a full zone is not its own zone. It merges into the neighbor it shares the longest edge with, and the grid line between them is removed. This works the same for big zones on the zone map and small zones when zoomed in. A highlight on a merged zone covers the whole merged shape. Picked zone highlights, the cab zone and grid lines all sit inside the roof's clipping group.
@@ -126,7 +126,8 @@ From the moment the machine stops at the limit until the move is done, the map i
 ### Pick a spot and the wire
 
 - On the wire, zone map: the operator can use Pick a spot to send the machine to any big zone. The machine drives there along the wire.
-- On the wire, zoomed in: the operator can pick a small zone. If the boom can reach it from where the truck is, only the boom moves. If not, and it is inside the big zone the cab is already in, the machine slides along the wire without folding and the boom stays as it is. If it is in a different big zone, the machine folds, drives along the wire until the truck lines up with the spot, then unfolds and telescopes the boom to reach it.
+- On the wire, Drive screen: tapping a spot on (or near, about a finger's width) the wire picks that spot, the same way. This includes the branch out to the materials. The green destination dot shows on the wire, then the Allow toast ("Machine will drive to new spot. Allow?"), then the joystick, the route on the map (solid behind, dotted ahead, the rest of the wire gray) and "Arrived." The truck drives there folded and stops; nothing rises.
+- On the wire, zoomed in: the operator can pick a small zone. If the boom can reach it from where the truck is, only the boom moves. If not, and it is inside the big zone the cab is already in, the machine slides along the wire without folding, then the boom adjusts so the cab sits in the picked zone. If it is in a different big zone, the machine folds, drives along the wire until the truck lines up with the spot, then unfolds and telescopes the boom to reach it.
 - Not on the wire, zone map: the operator can't use Pick a spot. Only the boom moves, so the machine can't drive itself to other big zones.
 - Not on the wire, zoomed in: the operator can use Pick a spot, but only the boom moves. It angles left or right, or telescopes straight out, to reach small zones within reach. The truck never moves.
 - The zones set when the machine folds. A small zone inside the cab's current big zone is a short move, so there is no folding. A small zone in a different big zone, or any big zone picked on the zone map, means the machine folds first so it can drive, if it is raised. If it is already folded on the ground, it skips folding and drives right away. The exception: if the boom can reach the picked zone by telescoping or angling without moving the truck, only the boom moves and there is no fold, even across a big zone line. The turret turns 180 degrees, 90 each way from forward, so on the wire the boom can swing sideways too: a small zone the boom can reach from where the truck is gets a boom-only move (angling and telescoping), and the truck only slides along the wire when the zone is out of reach. Off the wire, the boom angles or telescopes because the truck can't move. Moves where only the boom moves never fold.
@@ -157,9 +158,9 @@ On the wire, zoomed in (small zones):
 
 1. Tap a small zone (Tapped).
 2. Allow? Action toast: "Machine will drive to new spot. Allow?" The zone stays Tapped, then changes to Confirming once the operator presses Allow.
-3. Driving along the wire. The whole machine slides along the wire and the boom stays as it is. Loading toast: "Machine driving to new placement..."
-4. Arrived. Success toast.
-5. Done. No toast.
+3. Driving along the wire. The whole machine slides along the wire without folding. Loading toast: "Machine driving to new placement..."
+4. Configuring. The boom adjusts so the cab sits in the picked zone. Loading toast: "Configuring machine to new placement..."
+5. Arrived. The cab zone moves to the picked zone. Success toast: "Done configuring."
 
 On the wire, zoomed in, small zone in another big zone:
 
@@ -216,7 +217,7 @@ Not on the wire, zoomed in (boom telescoping):
 - Unlocking is either a PIN or a physical button. The method isn't decided yet, so both are designed:
 - Option A, PIN: the PIN keypad component sits in the middle of the dimmed map. Keys are 104 x 72 with 12px gaps for gloves, and the dots fill in as digits are entered.
 - Option B, button: the Tablet unlock button drawing shows where the button is, and a Step toast says to press and hold it.
-- After unlocking, a Success toast says "Unlocked". The operator then gets the normal machine view: zoom with + and − or pinch, drag to pan, and pick a big or small zone. The LMI stack and load badge stay visible for safety. Moves work exactly like the Pick a spot flows above.
+- After unlocking, a Success toast says "Unlocked". The operator then gets the normal machine view: zoom with + and − or pinch, drag to pan, and pick a big or small zone. The LMI stack and load badge stay visible for safety. Moves work like the Pick a spot flows above, with one difference: the operator is up on the roof, so the cab comes to them. A small zone works the same (the boom reaches into it, sliding or driving first if it's out of reach). A big zone folds the machine and drives it right under the zone, then the cab rises into the big zone, at the small zone on its edge nearest the truck (Loading toast "Rising to the ledge..."). On the cab tablet, a big zone move still ends folded at the stop point.
 
 Screens (in the "Pick a Spot - Dismounted HMI tablet" section):
 
@@ -238,7 +239,7 @@ Pictures go inside the toast, on the right, in the Floating frame (the Toast Pic
 
 These live in four sections: "Drive Mode", "Overweight Load Flows", "Uneven Ground / Steep Slope Flows" (Drive mode, Operate mode and Ground to avoid) and "Object Detection Flows" (heat map). Restricted speed means creep speed. The truck has three speeds: creep, slow and fast.
 
-- Drive mode is the ground view while the truck is folded and driving. It uses the same layout as Operate mode. The Tilt badge sits top right in place of + and −, since there are no zones to pick while driving. Trees are simple gray circles so the ground reads differently from the roof.
+- Drive mode is the ground view while the truck is folded and driving. It uses the same layout as Operate mode. The Tilt badge sits top right in place of + and −, since there are no zones to pick while driving. (In the simulator, the Drive map also has + and −, and the Tilt badge sits bottom right on both screens, mirroring the Load badge on the left and moving up above a toast the same way. On the Operate screen it still only shows while the ground is uneven.) Trees are simple gray circles so the ground reads differently from the roof.
 - Restrictions that last a while use two things together: a Warning toast when the restriction starts, and a Status chip in the status bar that stays until the cause clears. The chips are Creep speed (snail icon) and Boom restricted (boom-lift icon, a custom icon modeled on the side view cab close-up: cab with a window, a bent knuckle boom and forks, drawn on the same 24px grid and 2px round stroke as the icon set). When the cause clears, a Success toast says what is back and the chips go away.
 - Boom restricted means boom movement is limited, not locked. The map stays usable and there is no Movement locked overlay.
 - Overweight load: when the forks pick up a load over the limit, the Load badge turns amber and shows the max under the weight. A Warning toast says "Load is over the limit. Speed is reduced to creep until the load is lighter." The Creep speed chip stays on until the load is back within the limit.
@@ -254,8 +255,8 @@ Still being worked out. These notes come from the "ascend and descend physical b
 - After the press, the HMI tells the operator to push the joystick forward. The machine only moves while the joystick is held forward.
 - If the operator lets go of the joystick, the machine stops and the HMI asks if they want to cancel. When ascending, canceling sends the cab back down to where it started. When retracting, canceling stops the machine right where it is and gives the operator full manual control of the joysticks.
 - The machine senses the ledge and its height. If the truck is not near enough, the HMI tells the operator to drive closer and shows where the ledge is and how far away it is.
-- Ascending works on or off the wire. If the truck is on the wire, it disconnects.
-- After ascending, the screen switches to Operate mode. The machine has to descend to connect to the wire again.
+- Ascending works on or off the wire. If the truck is on the wire, it stays connected.
+- After ascending, the screen switches to Operate mode.
 - Outriggers are not part of ascend. If the operator extends the boom after reaching the ledge and the LMI goes past a set point (about the 4th light), the outrigger flow starts.
 - Ascend warns instead of blocking. Uneven ground, an overweight load or an object near or above the cab show a Warning toast that explains the risk, and the operator can still push the joystick to continue. LMI at limit keeps its own flow that stops the machine. Retract stays available during high LMI, overweight load and uneven ground, since retracting is how the operator gets back to a safe position. It only stops for something in its path, like an object under the cab. If any problem starts while the cab is moving, the cab stops and asks to cancel, the same as letting go of the joystick. The machine senses objects above it (eaves, branches, power lines) as well as around it. Warning screens are in the "Ascend & Retract Warnings" section.
 - Fully retract goes in this order: the boom folds, then the cab lowers, then the outriggers retract last so the machine stays stable the longest. It works while the forks are carrying a load. After retracting, the screen switches to Drive mode.
@@ -318,11 +319,11 @@ Material run (screens in the "Material Run Flow" section):
 
 - The material location is set beforehand in other software, so it is already on the map near the house. It is a tappable Material spot (an 80px round pin with a 44px package icon, no label), connected to the house wire by a short wire branch. It stays Selected until Allow, like zones.
 -
-- The run starts from the Operate zone map: the operator taps the Material spot there, like a zone. The truck stays folded the whole way.
+- The run starts from the Operate zone map or the Drive screen map: the operator taps the Material spot there, like a zone. The truck stays folded the whole way. While the run is going, W is its joystick, so it doesn't also drive the truck by hand.
 
 1. On the wire: the Material spot shows on the ground left of the house.
 2. Tap the Material spot: it turns teal. Action toast "Machine will drive to materials. Allow?" After Allow, a Loading toast with the joystick picture says "Push the joystick forward to move."
-3. Driving: the route along the wire to the Material spot is shown dotted. Loading toast "Driving along the wire...". The truck is behind the toast, so the Truck indicator shows above it.
+3. Driving: the route along the wire to the Material spot is shown dotted. Loading toast "Machine driving to new placement...". The truck is behind the toast, so the Truck indicator shows above it.
 4. Arrived: the truck is at the Material spot. Success toast "Arrived at materials." with a sound, for 1.5 s.
 5. Loading: the operator loads the forks by hand with the joysticks. The Load badge updates (800 LB). 5a. Load too heavy: if the load is over the limit, the Overweight load flow starts (amber Load badge, Creep speed chip, Warning toast).
 6. Going back: the operator picks a spot on the roof (Action toast "Machine will drive to new spot. Allow?"), then the normal Pick a spot and Ascend flows run. The truck does not remember its last roof spot.
@@ -331,22 +332,25 @@ Material run (screens in the "Material Run Flow" section):
 - Common automated paths that skip parts of the house are out of scope for now.
 - Material run: materials are always on the ground. A wire path connects the material spot to the main roof, since the truck drives it many times. The operator uses Pick a spot to send the truck to the material location.
 - Pick a spot with the joystick (reference flow with the release branch in "Pick a Spot with Joystick · On Wire (big zones)". Rolled out to all Pick a spot flows on and off the wire and the material run: each has an "After Allow · Push the joystick" screen, and every Loading toast shows the joystick picture. The dismounted tablet flows are unchanged):
-  - Tap a zone, tap Allow, then a Loading toast with the Joystick forward picture says "Push the joystick forward to move." The operator holds the joystick forward for the whole move: descending, driving the wire, ascending and any boom angling or telescoping. It is always forward, no matter which way the machine is going. Every Loading toast during the move ("Push the joystick forward to move.", "Machine descending...", "Driving along the wire...") shows the Joystick forward picture, as a reminder to keep holding it.
+  - Tap a zone, tap Allow, then a Loading toast with the Joystick forward picture says "Push the joystick forward to move." The operator holds the joystick forward for the whole move: descending, driving the wire, ascending and any boom angling or telescoping. It is always forward, no matter which way the machine is going. Every Loading toast during the move ("Push the joystick forward to move.", "Machine descending...", "Machine driving to new placement...") shows the Joystick forward picture, as a reminder to keep holding it.
   - Why: the point is that the operator does not have to think much. On a regular boom lift the operator flips a switch for each part of the machine and keeps track of every angle and telescope while also worrying about stability and the destination. Here the mental model is just "I want to move forward," and the machine moves forward to the spot.
   - Letting go of the joystick stops the machine. An Action toast says "Machine stopped. Push the joystick to keep moving, or cancel to take full control." Canceling stops the machine right where it is and gives the operator full manual control.
+  - When a move finishes, a joystick still held from it does nothing. The operator lets go first, and the next push works as normal manual control. This keeps the cab (or truck) from carrying on past the spot. It applies to every joystick move: Pick a spot, the material run, Ascend and Retract.
   - Dismounted tablet: no joystick, so Pick a spot stays tap Allow and go.
 - Power on, idle and off (cab tablet, screens in the "Power On, Idle and Off" section):
   1. Screen turns on: the map is covered by the Map lock overlay with the PIN keypad. One shared password for the machine.
   2. Start-up check: a card lists Outriggers and LMI, each with a spinner while checking and a green check when OK. Loading toast "Running start-up check..."
-  3. Passed: Step toast "Start-up check passed. Press the Start button to start the machine."
-  4. The operator presses the physical Start button. Success toast "Machine started. You are in Drive mode." with a sound.
+  3. Passed: both checks show OK and a Step toast says "Start-up check passed." The screen stays for about a second.
+  4. The machine starts on its own and goes to the main screen. Success toast "Machine started. You are in Drive mode." with a sound. There is no Start press.
   5. Idle: after a few minutes without movement the machine goes idle on its own. The map dims, an "Idle" chip (moon icon, neutral) shows in the status bar, and a Step toast says "Machine is idle. Touch the screen or move a joystick to wake it."
   6. Awake: touching the screen or moving a joystick wakes it. No password.
   7. Turning off: pressing the same physical Start button turns the machine off. Loading toast "Turning off...", then the screen goes dark.
 
+  In the simulator: it starts off with the screen dark. P (the Start button) or a tap on the dark screen turns the screen on, and P turns the machine off. While it's off and the operator is in the cab, a prompt under the tablet says "P · Tap the screen or press P to turn on the truck". The idle time is 60 seconds without the machine moving, and the machine doesn't go idle in the middle of a flow. Until the machine is on, only getting in or out (4) works. If it was turned off with the cab up, it starts in Operate mode and the toast says so.
+
   Still open: what happens if a start-up check fails, and whether there is a manual way to go idle.
 - Idle vs off: both are safe because the machine locks in place. Idle resumes faster but uses battery, for when the truck will move again soon. Off is for when it will stay put for a while. Idle can be set manually or automatically (how is still open).
-- Tablet latch: the tablet can be removed when the truck is on the wire or when the cab is at the ledge (after Ascend, even though the wire disconnects).
+- Tablet latch: the tablet can be removed when the truck is on the wire or when the cab is at the ledge (after Ascend).
 
   Truck at the roof (screens in "Truck at the Roof: Tablet Taken or Left"):
   - 1a, tablet taken, machine off: the machine was turned off with the physical button. The dismounted tablet shows the map under the dim overlay with a large square teal power button (220px, power icon) and the message "Start machine" under it. Starting the machine from the roof is allowed. Tapping it opens the PIN keypad, then the start-up check runs. Because the tablet is away from the cab, Start is on screen: Action toast "Start-up check passed. Start the machine from here?" with a Start button. Then "Machine started. Pick a spot to move the machine." Pick a spot on the tablet is tap Allow and go.
@@ -455,7 +459,7 @@ Not included: the "You are at risk of tipping" toast, which you parked under May
 The plan is to code this into an interactive site. You drive the truck yourself, use every HMI feature, and run into every alert as it happens. Nothing here is designed yet. These notes capture the direction so the Figma work lines up with it.
 
 - Goal: one playable demo that covers driving, operating on the roof, Pick a spot, the dismounted tablet, and all alert flows (LMI, outriggers, overweight load, boom while driving fast, uneven ground, object detection).
-- 3D environment: the machine view becomes a 3D scene, like the wireframes or the Tesla 3D driving view. The truck, house, roof, trees and ground are 3D, and the camera follows the truck. The HMI pieces stay 2D on top of the scene: status bar, LMI light stack, chips, badges, toasts and buttons.
+- 3D environment: the machine view becomes a 3D scene, like the wireframes or the Tesla 3D driving view. The truck, house, roof, trees and ground are 3D, and the camera follows the truck. In the simulator, the world is a warm autumn, toned down: golden grass with a faint triangle pattern and a few tufts, a hazy blue sky fading to a warm horizon, a warm afternoon sun, and soft stepped (toy-like) shading on the ground, plants and house. Round autumn trees and pines frame the edges of the site (decoration only), with a few flower clumps near the house. The bushes and posts are the same obstacles as before, restyled. The house has warm walls, a shingled terracotta red roof whose faces shade clearly lighter or darker by which way they face the sun, trimmed windows and a door. The truck keeps its own look. The HMI pieces stay 2D on top of the scene: status bar, LMI light stack, chips, badges, toasts and buttons.
 - Password in the simulator: the password is 1117. To keep the demo quick, tapping Unlock without entering it also works as a bypass.
 - 3D ground: in general the ground should look 3D, so the operator can see divots, dips and slopes in the terrain around the house. This is planned for the coded version, built from the drone scan. The Figma screens only hint at it: flat ground stays plain, and the steep slope uses a 3D terrain map style as a stand-in.
 - Object proximity heat map: objects near the truck light up on the side that faces the truck. The glow gets bigger and hotter the closer the truck gets, going from light amber to orange to deep red-orange. It works together with the Object detection alert and the Creep speed chip.
@@ -478,8 +482,8 @@ From the "Ideas and steps for machine simulator/video game" frame.
 
 **Step 2: the moving parts.**
 
-- Operator: walks around. Looks like a blank 3D figure, a bit like a Smiski. Inspiration pictures to come.
-- Machine/truck: drives and lifts. References will come from the industrial designer.
+- Operator: walks around. A Smiski-style figure (Figma "Operator references"): about 1.6 m tall with a big round head, tiny dot eyes and a small frowny mouth, a short soft body and stubby arms and legs, pale yellow-green with a faint glow, and a plain green hard hat (no symbol). The legs step and arms swing while walking. The operator also stands in the cab while driving and operating, and rides up with it. With the dismounted tablet, they carry it in both hands.
+- Machine/truck: drives and lifts. References will come from the industrial designer. In the simulator, the whole long rounded housing is the turnstile: it sits on a turntable ring on the chassis and turns with the boom, 90 degrees each way. Turned sideways, it sticks out a little past the sides. The lower boom hinges low at the back end of the housing, and when folded the boom lies in a channel along the housing's top.
 
 **Step 3: design the simulator screen.**
 
@@ -495,9 +499,9 @@ From the "Ideas and steps for machine simulator/video game" frame.
 - Operate mode: WASD moves the cab forward, backward and side to side. Up and down arrows move the cab up and down.
 - Fork operation: up and down arrows move the forks up and down. W extends the forks out, S retracts them.
 - Loads: forks are hard to control in a game, so to pick up or drop off a load the player presses L when near one. An "L" prompt shows when they are close enough.
-- H detaches the HMI tablet from the machine.
+- H detaches the HMI tablet from the machine. In the simulator, H in the truck takes the tablet off or puts it back. Off the wire, H shows the latch (Map lock "Latched to truck") until the wire connects or H is pressed again. A removed tablet starts locked, and the PIN keypad shows once the "Tablet removed" toast hides, or sooner on a tap. A wrong PIN clears the dots. The simulator uses the PIN option. Walking (4) with the tablet keeps the HMI open, and getting back in clips it back on. The tablet also comes off with the cab at the roof, so the operator can carry it onto the roof.
 - 4 gets the operator out of the machine. If the machine is raised and not over the roof, getting out is blocked and a message says "Get to the roof or ground."
-- Out of the machine, the operator walks with WASD. On the roof, the edges have an invisible force field so the operator cannot fall off.
+- Out of the machine, the operator walks with WASD. On the roof, the edges have an invisible force field so the operator cannot fall off. In the simulator, the cab is at the roof when its floor is level with the roof right beside it (at the ledge after Ascend, or resting on the roof after Pick a spot), and not while it is still moving. A "4 Step onto the roof" prompt shows then. The operator steps out beside the cab, walks up and down the roof slopes, and can't walk through the cab. To get back in, they walk up to the cab and press 4, which puts them in Operate mode. On the roof with the dismounted tablet, the outrigger switch (O) works too, so a move that stops to ask for the outriggers can carry on, and the Controls panel lists it under Walking keys.
 
 **Proposed extra keys (in the Controls panel, not final): W = hold joystick forward during Pick a spot, Ascend and Retract (holding W feels like pushing the joystick forward), P = Start button, G = wire button, 9 = Ascend to ledge, 0 = Descend (retract machine), B = LMI button, O = outrigger switch, K = show or hide the Controls panel. Pick a spot and wire guidance stay in the HMI (mouse). Earlier open items:** the joystick-forward hold used in Pick a spot, Ascend and Retract (W could be the natural fit); the physical controls (Start button, wire button, LMI button, outrigger switch, Ascend and Retract controls); and wire guidance and Pick a spot, which may live in the HMI only (mouse).
 

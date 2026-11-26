@@ -8,12 +8,15 @@
 //   4 · Driving along the wire while the joystick is held.
 //   5 · Arrived: the cab zone moves to the picked zone. Success toast "Done configuring."
 // Not built yet (they need a moving boom): unfolding and telescoping the boom into the zone.
+import { releaseJoystickFirst } from '../keys'
 import { useSim, NO_PICK, type PickState } from '../store'
-import { isHeld } from '../keys'
+import { joystickHeld, joystickPicture } from './tablet'
+import { isDismounted } from '../store'
 import { ROOF_OUTLINE } from '../scene/siteLayout'
 import { isInside, edgeDistance } from '../scene/roofShape'
-import { nearestOnWire, bestRoute, routeLength, poseOnWire } from '../scene/wireTrack'
-import { zoneAt, zoneCenterOnRoof, bigZoneOf, sameZone, type ZoneKind } from '../scene/zones'
+import { nearestOnWire, bestRoute, routeLength, poseOnWire, JUNCTION_S } from '../scene/wireTrack'
+import { BRANCH } from '../scene/siteLayout'
+import { zoneAt, zoneCenterOnRoof, zoneRects, bigZoneOf, sameZone, type Zone, type ZoneKind } from '../scene/zones'
 import { foldStep } from './machineControl'
 import { restrictions } from './alerts'
 import joystick from '../assets/hmi/toast-joystick.svg'
@@ -37,11 +40,12 @@ let speed = 0 // m/s along the route
 let lastTick = 0 // when the last frame ran (ms), so timing follows the real clock
 
 const clearOwnToast = () => {
-  if (useSim.getState().toast?.id === TOAST) useSim.getState().clearToast()
+  useSim.getState().clearToast(TOAST)
 }
 
 /** Which zones can be picked at each Operate zoom level. */
-export const zoneKindForZoom = (zoom: 1 | 2 | 3): ZoneKind => (zoom === 3 ? 'small' : 'big')
+// Big zones on the zone map, small zones at the middle zoom and zoomed in (Hanne, 2026-11-25).
+export const zoneKindForZoom = (zoom: 1 | 2 | 3): ZoneKind => (zoom === 1 ? 'big' : 'small')
 
 /** A tap on the Operate map at world point (x, z). */
 export function tapMap(x: number, z: number, zoom: 1 | 2 | 3) {
@@ -53,14 +57,15 @@ export function tapMap(x: number, z: number, zoom: 1 | 2 | 3) {
   const onWire = s.wire === 'connected'
 
   // Off the wire, the zone map can't send the machine anywhere: only the boom moves, to small zones (zoomed in).
-  if (!onWire && zoom !== 3) {
+  if (!onWire && zoom === 1) {
     s.showToast({ id: TOAST, type: 'Step', title: 'Pick a spot needs the wire.', message: 'Zoom in to move the boom instead.' })
     return
   }
   cancelRun() // a zone is picked instead of the Material spot
 
   const zone = zoneAt(zoneKindForZoom(zoom), x, z)
-  if (sameZone(zone, s.cabZone)) return
+  const cab = s.cabSpot
+  if (cab && sameZone(zone, zoneAt(zone.kind, cab.x, cab.z))) return
 
   // Off the wire: the boom angles or telescopes to the zone, and the truck never moves.
   if (!onWire) {
@@ -85,17 +90,88 @@ export function tapMap(x: number, z: number, zoom: 1 | 2 | 3) {
     if (!boomTarget(zone, stop, stop.heading)) return s.showBlocked("The boom can't reach that zone from the wire.")
   }
 
+  // Dismounted tablet, big zone: the operator is up on the roof, so the cab comes to them. After driving under the
+  // big zone, the cab rises into it, at the small zone on its edge nearest the truck (Hanne, 2026-11-25).
+  // The cab tablet keeps the rule that a big zone move ends folded at the stop point.
+  let land: Zone | null = null
+  if (zone.kind === 'big' && isDismounted(s.tablet)) {
+    const stop = poseOnWire(dest, s.wireDir)
+    land = nearestReachable(zone, stop)
+    if (!land) return s.showBlocked("The boom can't reach that zone from the wire.")
+  }
+
   // The machine folds ("Machine descending...") only if it is raised and has to drive somewhere far:
   // a big zone, or a small zone in another big zone. Already folded on the ground, it just drives.
-  const far = zone.kind === 'big' || !s.cabZone || !sameZone(bigZoneOf(zone), bigZoneOf(s.cabZone))
+  const far = zone.kind === 'big' || !cab || !sameZone(bigZoneOf(zone), zoneAt('big', cab.x, cab.z))
   const folds = s.machineRaised && far
-  offerPick({ zone, destS: dest, startS: s.wireS, way: route.way, length: route.length, folds, drives: true })
+  offerPick({ zone, destS: dest, startS: s.wireS, way: route.way, length: route.length, folds, drives: true, land })
+}
+
+/** The small zone inside `big` that the boom can reach from `stop`, closest to the truck there. */
+function nearestReachable(big: Zone, stop: { x: number; z: number; heading: number }): Zone | null {
+  let best: Zone | null = null
+  let bestD = Infinity
+  for (const r of zoneRects(big)) {
+    const step = r.size / 4
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 4; j++) {
+        const small = zoneAt('small', r.x + (i + 0.5) * step, r.z + (j + 0.5) * step)
+        if (!sameZone(bigZoneOf(small), big)) continue
+        const c = zoneCenterOnRoof(small)
+        const d = Math.hypot(c.x - stop.x, c.z - stop.z)
+        if (d < bestD && boomTarget(small, stop, stop.heading)) {
+          best = small
+          bestD = d
+        }
+      }
+    }
+  }
+  return best
+}
+
+/**
+ * Drive mode, on the wire: a tap on (or near) the wire picks that spot on it, like Pick a spot (Hanne, 2026-11-26).
+ * `reach` is how far from the wire a tap still counts, in meters (about a finger's width on the tablet).
+ * The branch out to the materials counts too. The truck drives there folded and stops; nothing rises.
+ */
+export function tapWire(x: number, z: number, reach: number) {
+  if (movementLocked()) return
+  const s = useSim.getState()
+  if (s.wire !== 'connected' || runIsMoving(s.run.phase)) return
+  if (s.pick.phase !== 'idle' && s.pick.phase !== 'tapped') return
+  const house = nearestOnWire(x, z)
+  // The nearest point on the branch, and how far out along it.
+  const bx = BRANCH.end.x - BRANCH.start.x
+  const bz = BRANCH.end.z - BRANCH.start.z
+  const k = Math.max(0, Math.min(1, ((x - BRANCH.start.x) * bx + (z - BRANCH.start.z) * bz) / (bx * bx + bz * bz)))
+  const branchDist = Math.hypot(x - (BRANCH.start.x + bx * k), z - (BRANCH.start.z + bz * k))
+  const onBranch = branchDist < house.dist && k > 0.02
+  if (Math.min(house.dist, branchDist) > reach) return
+  cancelRun()
+
+  if (onBranch) {
+    const to = k * BRANCH.length
+    // Already on the branch: just ride it in or out. Otherwise ride the house wire to the junction first.
+    if (s.branchT !== null) {
+      if (Math.abs(to - s.branchT) < 0.5) return
+      return offerPick({ zone: null, destS: JUNCTION_S, startS: s.wireS, way: 1, length: 0, folds: false, drives: true, branchTo: to })
+    }
+    const route = bestRoute(s.wireS, JUNCTION_S, s.wireDir)
+    if (!route) return s.showBlocked('The wire to that spot is blocked.')
+    return offerPick({ zone: null, destS: JUNCTION_S, startS: s.wireS, way: route.way, length: route.length, folds: false, drives: true, branchTo: to })
+  }
+  // A spot on the house wire (from the branch, the truck backs down it to the junction first).
+  const from = s.branchT !== null ? JUNCTION_S : s.wireS
+  if (s.branchT === null && Math.min(routeLength(from, house.s, 1), routeLength(from, house.s, -1)) < 0.5) return
+  const route = bestRoute(from, house.s, s.wireDir)
+  if (!route) return s.showBlocked('The wire to that spot is blocked.')
+  offerPick({ zone: null, destS: house.s, startS: from, way: route.way, length: route.length, folds: false, drives: true })
 }
 
 /** Show the picked zone and ask Allow? The wording says whether the truck drives or only the boom moves. */
-function offerPick(p: Omit<PickState, 'phase' | 'descended'>) {
+function offerPick(p: Omit<PickState, 'phase' | 'descended' | 'land' | 'branchTo'> & { land?: Zone | null; branchTo?: number | null }) {
   const s = useSim.getState()
-  s.setPick({ ...p, phase: 'tapped', descended: 0 })
+  s.setPick({ land: null, branchTo: null, ...p, phase: 'tapped', descended: 0 })
   s.showToast({
     id: TOAST,
     type: 'Action',
@@ -111,7 +187,8 @@ function allow() {
   speed = 0
   stopped = false
   s.setPick({ phase: 'joystick', startS: s.wireS })
-  s.showToast({ id: TOAST, type: 'Loading', title: 'Push the joystick forward to move.', picture: joystick })
+  // A dismounted tablet has no joystick: the machine just goes, and the next Loading toast shows right away.
+  if (!isDismounted(s.tablet)) s.showToast({ id: TOAST, type: 'Loading', title: 'Push the joystick forward to move.', picture: joystick })
 }
 
 /** Before Allow, zooming in or out drops the picked zone (doc: "goes back to the normal map"). */
@@ -142,7 +219,7 @@ function joystickReleased(held: boolean) {
     })
   } else if (held && stopped) {
     stopped = false
-    s.showToast({ id: TOAST, type: 'Loading', title: movingTitle(), picture: joystick })
+    s.showToast({ id: TOAST, type: 'Loading', title: movingTitle(), picture: joystickPicture(joystick) })
   }
 }
 /** Cancel: the machine stays right where it is and the operator has full manual control. */
@@ -175,7 +252,7 @@ export function tickPickASpot(): number | null {
   lastTick = now
   // Boom-only moves and the rise at the end are run by tickPickBoom.
   if (!pickIsMoving(pick.phase) || pick.phase === 'configuring' || !pick.drives) return null
-  const held = s.mode !== 'walking' && isHeld('w')
+  const held = joystickHeld()
   // Waiting on the outrigger switch: nothing moves.
   if (movementLocked()) return s.wireS
   // The truck can't drive with the outriggers down: the machine stops and asks to retract them first.
@@ -201,6 +278,18 @@ export function tickPickASpot(): number | null {
   const target = held ? (restrictions().creep ? CREEP_SPEED : PICK_SPEED) : 0
   const rate = target < speed ? PICK_BRAKE : PICK_ACCEL
   speed += Math.max(-rate * dt, Math.min(rate * dt, target - speed))
+  // A spot on the branch, and the truck is on it: ride the branch in or out to the spot.
+  if (pick.branchTo !== null && s.branchT !== null) {
+    const d = pick.branchTo - s.branchT
+    const step = speed * dt
+    if (Math.abs(d) <= step) {
+      useSim.setState({ branchT: pick.branchTo })
+      arrivedAtStop()
+      return null
+    }
+    useSim.setState({ branchT: s.branchT + Math.sign(d) * step })
+    return null
+  }
   // At the materials: back down the branch to the house wire first (forks still facing out), then ride the wire.
   if (s.branchT !== null) {
     const t = s.branchT - speed * dt
@@ -214,6 +303,11 @@ export function tickPickASpot(): number | null {
   const left = routeLength(s.wireS, pick.destS, pick.way)
   const step = speed * dt
   if (step >= left || left < 0.01) {
+    // Headed out the branch: at the junction, turn onto it and keep going.
+    if (pick.branchTo !== null) {
+      useSim.setState({ branchT: 0 })
+      return pick.destS
+    }
     arrivedAtStop()
     return pick.destS
   }
@@ -223,15 +317,16 @@ export function tickPickASpot(): number | null {
 function startNextStage(phase: 'descending' | 'driving' | 'configuring') {
   const s = useSim.getState()
   s.setPick({ phase })
-  s.showToast({ id: TOAST, type: 'Loading', title: movingTitle(), picture: joystick })
+  s.showToast({ id: TOAST, type: 'Loading', title: movingTitle(), picture: joystickPicture(joystick) })
 }
 
 /** The truck reached its stop on the wire. A big zone ends here, folded. A small zone: the cab rises into it. */
 function arrivedAtStop() {
   const s = useSim.getState()
   speed = 0
-  // Sliding along the wire with the boom up (a small zone in the same big zone) keeps the boom as it is.
-  if (s.pick.zone?.kind !== 'small' || s.machineRaised) return arrive()
+  // A big zone ends here, folded (on the dismounted tablet it rises into the near edge). A small zone: the cab moves into it. After driving folded it rises in; after a slide
+  // with the boom up (same big zone), the boom adjusts into the zone (Hanne, 2026-11-25).
+  if (s.pick.zone?.kind !== 'small' && !s.pick.land) return arrive()
   startConfiguring()
 }
 
@@ -240,7 +335,9 @@ let configTarget: { x: number; y: number; z: number } | null = null
 let configFromRaised = false
 function startConfiguring() {
   const s = useSim.getState()
-  configTarget = s.pick.zone ? boomTarget(s.pick.zone, s.truck, s.truckHeading) : null
+  // Dismounted big zone: the cab rises into the small zone on the big zone's near edge.
+  const into = s.pick.land ?? s.pick.zone
+  configTarget = into ? boomTarget(into, s.truck, s.truckHeading) : null
   if (!configTarget) return arrive()
   configFromRaised = s.machineRaised
   startBoomMove(configTarget)
@@ -255,7 +352,7 @@ export function tickPickBoom(dt: number) {
   const s = useSim.getState()
   const { pick } = s
   if (movementLocked()) return
-  const held = s.mode !== 'walking' && isHeld('w')
+  const held = joystickHeld()
   if (pick.phase === 'joystick' && !pick.drives) {
     if (held) startConfiguring()
     return
@@ -269,14 +366,19 @@ export function tickPickBoom(dt: number) {
 
 function arrive() {
   const s = useSim.getState()
+  // Done: a joystick still held from the move does nothing until it's let go (Hanne).
+  releaseJoystickFirst()
   speed = 0
   stopped = false
   configTarget = null
-  s.setCabZone(s.pick.zone)
+  // A big zone: the truck stops folded, and the cab zone moves to the picked zone. A small zone: the cab is really
+  // there now (the boom moved it in), so the cab zone already follows it.
+  const zone = s.pick.zone
+  if (zone && ((zone.kind === 'big' && !s.pick.land) || !s.cabSpot)) s.setCabSpot(zoneCenterOnRoof(zone))
   s.setPick(NO_PICK)
   s.showToast({ id: TOAST, type: 'Success', title: 'Arrived.', message: 'Done configuring.' })
   setTimeout(() => {
-    if (useSim.getState().toast?.id === TOAST && useSim.getState().pick.phase === 'idle') useSim.getState().clearToast()
+    if (useSim.getState().pick.phase === 'idle') useSim.getState().clearToast(TOAST)
   }, DONE_TOAST_MS)
 }
 
@@ -299,7 +401,7 @@ export function setStartCabZone() {
       }
     }
   }
-  s.setCabZone(zoneAt('big', best.x, best.z))
+  s.setCabSpot(best)
 }
 
 /** When the wire disconnects: drop any pick and the cab zone. */
@@ -307,6 +409,6 @@ export function resetPickASpot() {
   const s = useSim.getState()
   speed = 0
   s.setPick(NO_PICK)
-  s.setCabZone(null)
+  s.setCabSpot(null)
   clearOwnToast()
 }

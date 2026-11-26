@@ -8,16 +8,20 @@
 // Moving parts are a chain, so the mechanics step can pose them:
 //   turret (turns) → lower boom (hinges at the turret) → upper boom (hinges at the knuckle, telescopes)
 //   → jib with U-joint (keeps the cab level) → cab, with the forks fixed to it.
-// The chassis, big wheels, rounded turret cover and the rear deck with its small wheels stay on the ground.
+// The chassis, big wheels and the rear deck with its small wheels stay on the ground. The long rounded housing is the
+// turnstile: it sits on a turntable ring on the chassis and turns with the boom, 90° each way (Figma "Machine
+// References": "Turnstile rotates 180 degrees"). Turned sideways, it sticks out past the sides a little (Hanne).
+// The lower boom hinges low at the back end of the housing ("Hinges here") and folds into a channel along its top.
 import { RoundedBox } from '@react-three/drei'
 import { color, scene } from '../tokens/tokens'
-import { useSim } from '../store'
+import { useSim, isDismounted } from '../store'
+import { OperatorFigure } from './OperatorFigure'
 import { LoadStack } from './Site'
 import { FORK_REST, loadById } from '../flows/forks'
 
 import {
   MACHINE_DESIGN as MACHINE, MACHINE_SCALE, FOLDED, type MachinePose,
-  fromBack, TURRET, LOWER_BOOM, UPPER_BOOM, cabFromTip,
+  fromBack, TURRET, HINGE_BACK, LOWER_BOOM, UPPER_BOOM, cabFromTip,
 } from './machineSpec'
 
 const BOOM = { w: 0.42, h: 0.38 }
@@ -45,12 +49,20 @@ function Wheel({ x, y, z, r, w }: { x: number; y: number; z: number; r: number; 
 function Cab() {
   const forks = useSim((s) => s.forks)
   const carried = useSim((s) => s.carried)
+  // The operator rides in the cab whenever they're not out walking, facing the forks.
+  const inCab = useSim((s) => s.mode !== 'walking')
+  const holding = useSim((s) => isDismounted(s.tablet))
   const W = 2.1 // cab width
   const D = 2.4 // cab depth (front to back)
   const post = 0.09
   const roofY = 2.5 // above the cab floor
   return (
     <group>
+      {inCab && (
+        <group position={[0, 0.14, 0.35]} rotation={[0, Math.PI, 0]} scale={1 / MACHINE_SCALE}>
+          <OperatorFigure tablet={holding} />
+        </group>
+      )}
       {/* Floor */}
       <mesh position={[0, 0.07, 0]} castShadow receiveShadow>
         <boxGeometry args={[W, 0.14, D]} />
@@ -120,10 +132,11 @@ export function Machine({ pose = FOLDED }: { pose?: MachinePose }) {
           <meshStandardMaterial color={TEAL} />
         </mesh>
       ))}
-      {/* Big rounded turret cover over the front half of the body */}
-      <RoundedBox args={[W, 1.5, 3.3]} radius={0.5} smoothness={4} position={[0, 2.15, fromBack(1.7)]} castShadow receiveShadow>
-        <meshStandardMaterial color={TEAL} />
-      </RoundedBox>
+      {/* Turntable ring on top of the chassis, under the housing */}
+      <mesh position={[0, 1.43, TURRET.z]} castShadow receiveShadow>
+        <cylinderGeometry args={[1.05, 1.1, 0.06, 32]} />
+        <meshStandardMaterial color={scene.tire} />
+      </mesh>
       {/* Four big off-road wheels */}
       {[-1, 1].map((sx) =>
         [0.66, 2.9].map((d) => <Wheel key={`${sx}${d}`} x={sx * (W / 2 - 0.1)} y={0.53} z={fromBack(d)} r={0.53} w={0.42} />),
@@ -146,12 +159,13 @@ export function Machine({ pose = FOLDED }: { pose?: MachinePose }) {
 
       {/* ---------- The boom chain ---------- */}
       <group position={[TURRET.x, TURRET.y, TURRET.z]} rotation={[0, pose.turretYaw, 0]}>
-        {/* Turret: the round base the boom hinges on (mostly hidden under the cover) */}
-        <mesh castShadow>
-          <cylinderGeometry args={[0.45, 0.45, 0.3, 20]} />
+        <Housing />
+        {/* Hinge at the back end of the housing: a block the lower boom pivots on */}
+        <mesh position={[0, -0.05, HINGE_BACK]} rotation={[0, 0, Math.PI / 2]} castShadow>
+          <cylinderGeometry args={[0.24, 0.24, BOOM.w + 0.16, 16]} />
           <meshStandardMaterial color={DARK} />
         </mesh>
-        <group rotation={[pose.lowerPitch, 0, 0]}>
+        <group position={[0, 0, HINGE_BACK]} rotation={[pose.lowerPitch, 0, 0]}>
           {/* Lower boom */}
           <mesh position={[0, 0, -LOWER_BOOM / 2]} castShadow>
             <boxGeometry args={[BOOM.w, BOOM.h, LOWER_BOOM]} />
@@ -187,6 +201,45 @@ export function Machine({ pose = FOLDED }: { pose?: MachinePose }) {
           </group>
         </group>
       </group>
+    </group>
+  )
+}
+
+// ---------- Turnstile housing ----------
+// The long rounded housing that turns with the boom. In turret coordinates: centered on the turning point, its bottom
+// just above the turntable ring. Two rounded halves leave a channel down the middle of the top, where the folded boom
+// lies (Figma Drive mode renders).
+const HOUSING = { len: 3.3, h: 1.5, bottom: 1.46 - TURRET.y, channel: BOOM.w + 0.16 }
+function Housing() {
+  const W = MACHINE.width
+  const half = (W - HOUSING.channel) / 2
+  const midY = HOUSING.bottom + HOUSING.h / 2
+  const floorTop = -BOOM.h / 2 - 0.02 // the channel floor, just under the folded boom
+  return (
+    <group>
+      {[-1, 1].map((sx) => (
+        <RoundedBox
+          key={sx}
+          args={[half, HOUSING.h, HOUSING.len]}
+          radius={0.4}
+          smoothness={4}
+          position={[sx * (HOUSING.channel / 2 + half / 2), midY, 0]}
+          castShadow
+          receiveShadow
+        >
+          <meshStandardMaterial color={TEAL} />
+        </RoundedBox>
+      ))}
+      {/* Channel floor between the two halves */}
+      <RoundedBox
+        args={[HOUSING.channel + 0.2, floorTop - HOUSING.bottom, HOUSING.len - 0.1]}
+        radius={0.1}
+        position={[0, (floorTop + HOUSING.bottom) / 2, 0]}
+        castShadow
+        receiveShadow
+      >
+        <meshStandardMaterial color={DARK} />
+      </RoundedBox>
     </group>
   )
 }

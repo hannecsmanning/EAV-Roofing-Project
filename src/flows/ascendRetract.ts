@@ -5,19 +5,18 @@
 //   "Drive closer to the ledge." with the distance on the map. Otherwise: "Push the joystick forward." Holding the
 //   joystick (W) raises the cab straight up beside the ledge, to the ledge height the machine senses. Letting go stops
 //   it and asks to cancel; canceling sends the cab back down. At the ledge: "At the ledge." and Operate mode.
-//   On the wire, ascending disconnects it.
+//   On the wire, the truck stays connected while ascending (Hanne, 2026-11-26).
 // Retract: same rules. The boom folds, then the cab lowers, while the joystick is held. Letting go asks to cancel;
 //   canceling stops right there with full manual control. Done: "Successfully retracted." and Drive mode.
 //   With the outriggers down, step 3 asks for the outrigger switch (Figma "Retract Machine Flow" 4-6).
 import { useSim, type LiftPhase, type LiftFlow, type LiftWarning } from '../store'
-import { isHeld } from '../keys'
+import { isHeld, releaseJoystickFirst } from '../keys'
 import { MACHINE, MACHINE_SCALE, FOLDED_TIP, TURRET, CAB_HALF, cabFromTip } from '../scene/machineSpec'
 import {
   ROOF_OUTLINE, HOUSE, OBSTACLES, LOADS, MAX_TILT_DEG, MAX_LOAD_LB, groundHeight, groundTiltDeg, houseHeightAt,
 } from '../scene/siteLayout'
 import { nearestEdge } from '../scene/roofShape'
 import { solvePose, moveToward, foldStep, cabWorld, cabCenter } from './machineControl'
-import { resetPickASpot } from './pickASpot'
 import { cabSpeed } from './alerts'
 import { askRetract, movementLocked } from './outriggers'
 import joystick from '../assets/hmi/toast-joystick.svg'
@@ -63,9 +62,7 @@ let timer: ReturnType<typeof setTimeout> | undefined
 
 const set = (flow: LiftFlow, phase: LiftPhase, warn: LiftWarning = null) => useSim.getState().setLift({ flow, phase, warn })
 const toast = (t: Parameters<ReturnType<typeof useSim.getState>['showToast']>[0]) => useSim.getState().showToast({ id: TOAST, ...t })
-const clearToast = () => {
-  if (useSim.getState().toast?.id === TOAST) useSim.getState().clearToast()
-}
+const clearToast = () => useSim.getState().clearToast(TOAST)
 /** Close the flow after a short while (the panel and toast stay up long enough to read). */
 function endLater(ms: number) {
   clearTimeout(timer)
@@ -167,11 +164,6 @@ export function pressAscend() {
   if (!target) {
     s.showBlocked('The cab can\'t reach the ledge from here.')
     return
-  }
-  // Ascending disconnects the wire (doc).
-  if (s.wire !== 'off') {
-    s.setWire({ wire: 'off', wireAvailable: false })
-    resetPickASpot()
   }
   stage = 0
   warnedAbove = false
@@ -308,6 +300,7 @@ export function tickLift(dt: number) {
     if (stage === 0 && moveToward({ x: FOLDED_TIP.x, y: target.y, z: FOLDED_TIP.z }, step)) stage = 1
     if (stage === 1 && moveToward(target, step)) {
       set('ascend', 'done')
+      releaseJoystickFirst()
       s.setMode('operate')
       toast({ type: 'Success', title: 'At the ledge.', message: 'Switching to Operate mode.' })
       endLater(DONE_MS)
@@ -348,6 +341,8 @@ export function tickLift(dt: number) {
 
 function finishRetract() {
   set('retract', 'done')
+  // Done: a joystick still held from the move does nothing until it's let go (Hanne).
+  releaseJoystickFirst()
   useSim.getState().setMode('drive')
   toast({ type: 'Success', title: 'Successfully retracted.', message: 'Switching to Drive mode.' })
   endLater(DONE_MS)
