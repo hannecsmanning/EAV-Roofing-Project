@@ -137,8 +137,31 @@ export const LOADS: Load[] = [
 
 export const TRUCK_START: [number, number, number] = [-6, 0, 9]
 
-/** How high the house is at (x, z), in meters: the roof surface over the roof, 0 elsewhere. */
+/** The roof surface at (x, z), ignoring what sits on it. */
+function roofSurface(x: number, z: number) {
+  return HOUSE.wallHeight + squareDistance(ROOF_OUTLINE, x, z) * Math.tan((HOUSE.pitchDeg * Math.PI) / 180)
+}
+
+// ---------- Things on the roof (Hanne): a chimney and two vents. The cab and the operator have to go around them. ----------
+// Like the chimney and round vents in the Figma roof render. Placed well inside the roof, away from the edges where
+// the cab usually lands. Each is a square footprint (half = half its width) standing `height` above the roof.
+export type RoofItem = { id: string; kind: 'chimney' | 'vent'; x: number; z: number; half: number; height: number }
+export const ROOF_ITEMS: RoofItem[] = [
+  { id: 'chimney', kind: 'chimney', x: 12, z: -28, half: 0.6, height: 1.6 },
+  { id: 'vent-1', kind: 'vent', x: -8, z: -26, half: 0.25, height: 0.45 },
+  { id: 'vent-2', kind: 'vent', x: 3, z: -15, half: 0.25, height: 0.45 },
+]
+/** The roof item at (x, z), counting `margin` meters around it, or null. */
+export function roofItemAt(x: number, z: number, margin = 0): RoofItem | null {
+  return ROOF_ITEMS.find((i) => Math.abs(x - i.x) <= i.half + margin && Math.abs(z - i.z) <= i.half + margin) ?? null
+}
+/** The top of a roof item (its base is the roof under its middle). */
+export const roofItemTop = (i: RoofItem) => roofSurface(i.x, i.z) + i.height
+
+/** How high the house is at (x, z), in meters: the roof surface (or a chimney or vent on it) over the roof, 0 elsewhere. */
 export function houseHeightAt(x: number, z: number): number {
   if (!isInside(ROOF_OUTLINE, x, z)) return 0
-  return HOUSE.wallHeight + squareDistance(ROOF_OUTLINE, x, z) * Math.tan((HOUSE.pitchDeg * Math.PI) / 180)
+  const r = roofSurface(x, z)
+  const item = roofItemAt(x, z)
+  return item ? Math.max(r, roofItemTop(item)) : r
 }

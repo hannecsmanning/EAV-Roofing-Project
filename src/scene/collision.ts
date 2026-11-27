@@ -5,6 +5,10 @@ import { WALL_OUTLINE, OBSTACLES } from './siteLayout'
 import { MACHINE, MACHINE_SCALE } from './machineSpec'
 import { isInside, edgeDistance } from './roofShape'
 import { useSim, type Spot } from '../store'
+import { crewObstacles } from './Crew'
+
+/** The bushes and posts, plus the foreman walking the ground (he moves, so this is worked out each time). */
+const allObstacles = () => OBSTACLES.concat(crewObstacles())
 
 export type Circle = { x: number; z: number; r: number }
 type Box = { minX: number; maxX: number; minZ: number; maxZ: number }
@@ -65,7 +69,7 @@ export function isBlocked(circles: Circle[], others: Circle[] = []): boolean {
       circleHitsWalls(c) ||
       loadBoxes().some((b) => circleHitsBox(c, b)) ||
       // Bushes are a bit soft at the edge, so use 85% of their size.
-      OBSTACLES.some((o) => circlesTouch(c, { x: o.x, z: o.z, r: o.radius * (o.kind === 'bush' ? 0.85 : 1) })) ||
+      allObstacles().some((o) => circlesTouch(c, { x: o.x, z: o.z, r: o.radius * (o.kind === 'bush' ? 0.85 : 1) })) ||
       others.some((o) => circlesTouch(c, o)),
   )
 }
@@ -110,7 +114,7 @@ export function obstacleGaps(truck: Spot, heading: number) {
   const body = truckCircles(truck, heading)
   const c = Math.cos(heading)
   const s = Math.sin(heading)
-  return OBSTACLES.map((o) => {
+  return allObstacles().map((o) => {
     let gap = Infinity
     for (const b of body) gap = Math.min(gap, Math.hypot(o.x - b.x, o.z - b.z) - b.r - o.radius)
     // Where it is in the truck's own directions: right (+) / left (-), back (+) / front (-).

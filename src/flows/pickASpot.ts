@@ -15,7 +15,7 @@ import { isDismounted } from '../store'
 import { ROOF_OUTLINE } from '../scene/siteLayout'
 import { isInside, edgeDistance } from '../scene/roofShape'
 import { nearestOnWire, bestRoute, routeLength, poseOnWire, JUNCTION_S } from '../scene/wireTrack'
-import { BRANCH } from '../scene/siteLayout'
+import { BRANCH, ROOF_ITEMS } from '../scene/siteLayout'
 import { zoneAt, zoneCenterOnRoof, zoneRects, bigZoneOf, sameZone, type Zone, type ZoneKind } from '../scene/zones'
 import { foldStep } from './machineControl'
 import { restrictions } from './alerts'
@@ -64,6 +64,10 @@ export function tapMap(x: number, z: number, zoom: 1 | 2 | 3) {
   cancelRun() // a zone is picked instead of the Material spot
 
   const zone = zoneAt(zoneKindForZoom(zoom), x, z)
+  // A small zone with the chimney or a vent in it: the cab can't land there.
+  if (zone.kind === 'small' && ROOF_ITEMS.some((i) => sameZone(zoneAt('small', i.x, i.z), zone))) {
+    return s.showBlocked('Something on the roof is in the way.')
+  }
   const cab = s.cabSpot
   if (cab && sameZone(zone, zoneAt(zone.kind, cab.x, cab.z))) return
 

@@ -7,7 +7,7 @@
 //     the cab.
 //   Getting back in: walk up to the cab and press 4. That puts them in Operate mode, since the machine is raised.
 import { useSim, type Spot } from '../store'
-import { ROOF_OUTLINE, houseHeightAt, groundHeight } from '../scene/siteLayout'
+import { ROOF_OUTLINE, houseHeightAt, groundHeight, roofItemAt } from '../scene/siteLayout'
 import { isInside, edgeDistance } from '../scene/roofShape'
 import { OPERATOR_RADIUS, slideMove, type Circle } from '../scene/collision'
 import { CAB_HALF, MACHINE_SCALE } from '../scene/machineSpec'
@@ -66,7 +66,12 @@ export function canGetInFromRoof(o: Spot) {
 /** One step of walking on the roof: slides along the edge and around the cab instead of going through them. */
 export function roofMove(at: Spot, dx: number, dz: number): Spot {
   const cab = cabCircle()
-  return slideMove(at, dx, dz, (p) => !onRoofInside(p.x, p.z) || Math.hypot(p.x - cab.x, p.z - cab.z) < cab.r + OPERATOR_RADIUS)
+  return slideMove(
+    at,
+    dx,
+    dz,
+    (p) => !onRoofInside(p.x, p.z) || Math.hypot(p.x - cab.x, p.z - cab.z) < cab.r + OPERATOR_RADIUS || !!roofItemAt(p.x, p.z, OPERATOR_RADIUS),
+  )
 }
 
 /** How high the operator's feet are: on the roof surface or on the ground. */

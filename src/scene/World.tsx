@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { Crew } from './Crew'
 import { OperatorFigure, type WalkState } from './OperatorFigure'
 import { skyGradient } from './look'
 import { roofMove, operatorHeight } from '../flows/roofWalk'
@@ -66,7 +67,9 @@ function Truck() {
   const turnVel = useRef(0) // radians per second, + is left
   const alongVel = useRef(0) // speed along the wire, meters per second
 
-  useFrame((_, dt) => {
+  useFrame((_, rawDt) => {
+    // Cap one frame's step (a slow frame or a return to the tab can be a long one), so nothing jumps.
+    const dt = Math.min(rawDt, 0.1)
     const truck = ref.current
     if (!truck) return
     // Off, starting up or idle, the machine is locked in place (docs/CONTEXT.md "Power on, idle and off").
@@ -248,7 +251,8 @@ function Operator() {
   // Carrying the dismounted tablet in both hands.
   const holding = useSim((s) => isDismounted(s.tablet))
 
-  useFrame(({ camera }, dt) => {
+  useFrame(({ camera }, rawDt) => {
+    const dt = Math.min(rawDt, 0.1)
     const g = ref.current
     if (!g || mode !== 'walking') return
     const { operator: at, truck, truckHeading, setOperator, operatorOnRoof } = useSim.getState()
@@ -307,7 +311,8 @@ function CameraRig() {
   const gl = useThree((s) => s.gl)
   useEffect(() => attachViewControls(gl.domElement), [gl])
 
-  useFrame(({ camera }, dt) => {
+  useFrame(({ camera }, rawDt) => {
+    const dt = Math.min(rawDt, 0.1)
     const { mode, truck, truckHeading, operator, operatorOnRoof } = useSim.getState()
     const walking = mode === 'walking'
     const who = walking ? operator : truck
@@ -355,6 +360,54 @@ function CameraRig() {
   return null
 }
 
+// ---------- The sun ----------
+// Warm afternoon sun from the same direction as before. Its shadow box follows what the camera is looking at and only
+// covers about 70 m, so shadows near you are sharp (each shadow pixel is ~3.4 cm instead of ~6 cm). A small normal
+// bias keeps walls that face the sun at a low angle from shading themselves in stripes ("shadow acne").
+const SUN_DIR = new THREE.Vector3(30, 26, 22).normalize()
+const SHADOW_HALF = 35 // meters each way from the focus
+const SHADOW_SNAP = (SHADOW_HALF * 2) / 2048 // move the box in whole shadow pixels, so edges don't shimmer
+function Sun() {
+  const light = useRef<THREE.DirectionalLight>(null)
+  const scn = useThree((s) => s.scene)
+  useEffect(() => {
+    const l = light.current
+    if (!l) return
+    scn.add(l.target)
+    return () => {
+      scn.remove(l.target)
+    }
+  }, [scn])
+  useFrame(({ camera }) => {
+    const l = light.current
+    if (!l) return
+    // Focus about 20 m ahead of the camera, on the ground.
+    const dir = camera.getWorldDirection(new THREE.Vector3())
+    const f = camera.position.clone().addScaledVector(new THREE.Vector3(dir.x, 0, dir.z).normalize(), 20)
+    f.set(Math.round(f.x / SHADOW_SNAP) * SHADOW_SNAP, 0, Math.round(f.z / SHADOW_SNAP) * SHADOW_SNAP)
+    l.target.position.copy(f)
+    l.position.copy(f).addScaledVector(SUN_DIR, 70)
+    l.target.updateMatrixWorld()
+  })
+  return (
+    <directionalLight
+      ref={light}
+      color={scene.sun}
+      intensity={1.5}
+      castShadow
+      shadow-mapSize={[2048, 2048]}
+      shadow-camera-left={-SHADOW_HALF}
+      shadow-camera-right={SHADOW_HALF}
+      shadow-camera-top={SHADOW_HALF}
+      shadow-camera-bottom={-SHADOW_HALF}
+      shadow-camera-near={1}
+      shadow-camera-far={160}
+      shadow-bias={-0.0002}
+      shadow-normalBias={0.04}
+    />
+  )
+}
+
 export function World() {
   return (
     <>
@@ -363,23 +416,12 @@ export function World() {
       <fog attach="fog" args={[scene.skyHorizon, 55, 150]} />
       {/* Warm afternoon sun, lower in the sky, with warm light bouncing up from the grass */}
       <hemisphereLight args={[scene.skyLight, scene.groundLight, 0.85]} />
-      <directionalLight
-        position={[30, 26, 22]}
-        color={scene.sun}
-        intensity={1.5}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-60}
-        shadow-camera-right={60}
-        shadow-camera-top={60}
-        shadow-camera-bottom={-60}
-        shadow-camera-far={160}
-        shadow-bias={-0.0004}
-      />
+      <Sun />
 
       <Site />
       <Truck />
       <Operator />
+      <Crew />
       <CameraRig />
     </>
   )

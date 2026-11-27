@@ -3,12 +3,13 @@ import * as THREE from 'three'
 import { Html } from '@react-three/drei'
 import { color, scene, space, radius, font } from '../tokens/tokens'
 import {
-  HOUSE, ROOF_OUTLINE, WALL_OUTLINE, OBSTACLES, MATERIAL_SPOT, LOADS, MAX_LOAD_LB, BRANCH,
-  groundHeight, wirePath, type Obstacle, type Load,
+  HOUSE, ROOF_OUTLINE, WALL_OUTLINE, OBSTACLES, MATERIAL_SPOT, LOADS, MAX_LOAD_LB,
+  groundHeight, type Obstacle, type Load,
 } from './siteLayout'
 import { isInside, squareDistance } from './roofShape'
 import { useSim } from '../store'
-import { toonGradient, roofGradient, grassPattern, shinglePattern, SHINGLE_TILE_M } from './look'
+import { toonGradient, roofGradient, grassPattern, shinglePattern, sidingPattern, SHINGLE_TILE_M } from './look'
+import { HouseDetails } from './HouseDetails'
 import { Nature } from './Nature'
 
 // Step 1 of the Simulator plan: the 3D map. Simple shapes, in a soft toy-like autumn look (look.ts, Nature.tsx).
@@ -141,8 +142,9 @@ function House() {
   const frontZ = Math.max(...WALL_OUTLINE.map((p) => p[1])) + 0.02
   return (
     <group>
+      {/* Walls with faint horizontal siding lines */}
       <mesh geometry={walls} castShadow receiveShadow>
-        <Toon c={scene.wall} />
+        <Toon c={scene.wall} map={sidingPattern} />
       </mesh>
       <group position={[0, HOUSE.wallHeight, 0]}>
         {/* Shingled roof, with stronger light steps so the faces away from the sun read darker */}
@@ -153,7 +155,7 @@ function House() {
           <Toon c={scene.trim} />
         </mesh>
       </group>
-      {/* Front door and windows, so you can tell front from back. Each has a light trim frame. */}
+      {/* Front door, with its frame and a step. Windows, trim, gutters, the porch, the garage and the roof items are in HouseDetails. */}
       <group position={[0, 0, frontZ]}>
         {/* Door with its frame and a low step */}
         <mesh position={[0, 1.12, 0.01]}>
@@ -172,67 +174,14 @@ function House() {
           <boxGeometry args={[1.6, 0.12, 0.6]} />
           <Toon c={scene.trim} />
         </mesh>
-        {[-2.8, -1.6, 1.6, 2.8].map((x) => <Window key={x} x={x} y={1.7} />)}
-        {/* Second floor: a row of windows, including one above the door */}
-        {[-2.8, -1.6, 0, 1.6, 2.8].map((x) => <Window key={`up${x}`} x={x} y={HOUSE.wallHeight - 1.6} />)}
       </group>
     </group>
   )
 }
 
-/** A window with a light frame, a cross bar and a sill. */
-function Window({ x, y }: { x: number; y: number }) {
-  return (
-    <group position={[x, y, 0]}>
-      <mesh position={[0, 0, 0.01]}>
-        <boxGeometry args={[1.08, 1.18, 0.05]} />
-        <Toon c={scene.trim} />
-      </mesh>
-      <mesh position={[0, 0, 0.04]}>
-        <boxGeometry args={[0.9, 1, 0.03]} />
-        <Toon c={scene.window} />
-      </mesh>
-      <mesh position={[0, 0, 0.06]}>
-        <boxGeometry args={[0.05, 1, 0.02]} />
-        <Toon c={scene.trim} />
-      </mesh>
-      <mesh position={[0, -0.6, 0.08]}>
-        <boxGeometry args={[1.2, 0.07, 0.16]} />
-        <Toon c={scene.trim} />
-      </mesh>
-    </group>
-  )
-}
-
 // ---------- Wire ----------
-// Lies on the ground and follows it, including up the slope.
-function Wire() {
-  const geometry = useMemo(() => {
-    const pts = wirePath().map(([x, z]) => new THREE.Vector3(x, groundHeight(x, z) + 0.04, z))
-    const curve = new THREE.CatmullRomCurve3(pts, true)
-    return new THREE.TubeGeometry(curve, pts.length * 2, 0.05, 6, true)
-  }, [])
-  // The branch out to the materials (Figma "Wire branch to materials"), as far as the truck stops.
-  const branch = useMemo(() => {
-    const pts = [0, 0.5, 1].map((k) => {
-      const x = BRANCH.start.x + (BRANCH.end.x - BRANCH.start.x) * k
-      const z = BRANCH.start.z + (BRANCH.end.z - BRANCH.start.z) * k
-      return new THREE.Vector3(x, groundHeight(x, z) + 0.04, z)
-    })
-    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 8, 0.05, 6, false)
-  }, [])
-  // Not connected yet, so it uses the "wire not connected" gray from the HMI map.
-  return (
-    <>
-      <mesh geometry={geometry} castShadow>
-        <meshStandardMaterial color={color.borderControl} />
-      </mesh>
-      <mesh geometry={branch} castShadow>
-        <meshStandardMaterial color={color.borderControl} />
-      </mesh>
-    </>
-  )
-}
+// The wire isn't drawn in the 3D world (Hanne, 2026-11-26). Its path is still there: the truck connects to it and rides
+// it the same way (siteLayout wirePath, wireTrack), and the HMI maps still show it.
 
 // ---------- Bushes and posts ----------
 // Fixed lump offsets so every bush looks the same on each reload.
@@ -389,7 +338,7 @@ export function Site() {
     <>
       <Ground />
       <House />
-      <Wire />
+      <HouseDetails />
       {OBSTACLES.map((o) => (o.kind === 'bush' ? <Bush key={o.id} o={o} /> : <Post key={o.id} o={o} />))}
       <MaterialSpot />
       <Loads />

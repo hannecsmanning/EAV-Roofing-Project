@@ -135,3 +135,20 @@ export const shinglePattern = (() => {
   t.anisotropy = 8
   return t
 })()
+
+/** Siding: thin horizontal lines every 25 cm (the texture is 1 m tall; wall UVs are in meters). White, so it
+ *  multiplies the wall color. */
+export const sidingPattern = (() => {
+  const c = document.createElement('canvas')
+  c.width = 8
+  c.height = 128
+  const g = c.getContext('2d')!
+  g.fillStyle = '#ffffff'
+  g.fillRect(0, 0, 8, 128)
+  g.fillStyle = scene.sidingLine
+  for (let i = 0; i < 4; i++) g.fillRect(0, i * 32, 8, 3)
+  const t = new THREE.CanvasTexture(c)
+  t.wrapS = t.wrapT = THREE.RepeatWrapping
+  t.colorSpace = THREE.SRGBColorSpace
+  return t
+})()

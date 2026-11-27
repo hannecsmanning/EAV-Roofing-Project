@@ -5,7 +5,7 @@
 // the roof. It obeys the same limits as moving the boom by hand, including the outriggers and LMI.
 import { useSim, type Spot } from '../store'
 import { MACHINE_SCALE, TURRET, FOLDED_TIP, CAB_HALF, LIMITS, cabFromTip } from '../scene/machineSpec'
-import { groundHeight, houseHeightAt } from '../scene/siteLayout'
+import { groundHeight, houseHeightAt, roofItemAt } from '../scene/siteLayout'
 import { zoneCenterOnRoof, type Zone } from '../scene/zones'
 import { solvePose, setTip } from './machineControl'
 import { lmiFrac, DEPLOY_FRAC, LIMIT_FRAC } from './lmi'
@@ -46,6 +46,8 @@ export function boomTarget(zone: Zone, truck: Spot, heading: number): Vec | null
     const mz = cab.z - ax * CAB_HALF.x * sy + az * CAB_HALF.z * cy
     const wx = truck.x + (mx * hc + mz * hs) * MACHINE_SCALE
     const wz = truck.z + (-mx * hs + mz * hc) * MACHINE_SCALE
+    // The cab can't rest on a chimney or vent: pick somewhere else.
+    if (roofItemAt(wx, wz, 0.15)) return null
     roof = Math.max(roof, houseHeightAt(wx, wz))
   }
   const floorM = roof + 0.05 - groundHeight(truck.x, truck.z) // cab floor above the truck's ground, meters

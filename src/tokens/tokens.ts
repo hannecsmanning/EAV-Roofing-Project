@@ -52,6 +52,15 @@ export const scene = {
   trim: '#fbf6ec',
   door: '#8a5c3e',
   window: '#a7c0cc',
+  sidingLine: '#e2d6c2', // the faint horizontal siding lines (multiplies the wall color)
+  base: '#d9cab1', // foundation strip along the bottom of the walls
+  gutter: '#a0715f',
+  garage: '#f6efe3',
+  garageLine: '#ddd2bf',
+  chimney: '#9b5e4a',
+  chimneyCap: '#6f4b3d',
+  vent: '#8f8f8a',
+  ventCap: '#6e6f6b',
   // Plants
   bush: '#8c8f4f',
   bushDark: '#767c43',
@@ -83,6 +92,14 @@ export const scene = {
   hardHat: '#5e9a4b',
   hardHatDark: '#4c8040',
   tabletBody: '#2b2b2b',
+  // The crew (same Smiski figure): roofers in orange hard hats, the foreman in white with a clipboard
+  rooferHat: '#e0893c',
+  rooferHatDark: '#c2702a',
+  foremanHat: '#f3efe6',
+  foremanHatDark: '#d6cfc1',
+  clipboard: '#9a6f4c',
+  paper: '#f7f3ea',
+  hammer: '#5d5d5a',
   tabletScreen: '#d7e8e4',
   truckCab: '#139488',
   truckBoom: '#0b5e58',
