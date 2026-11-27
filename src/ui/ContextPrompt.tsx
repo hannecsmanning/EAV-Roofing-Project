@@ -9,6 +9,8 @@ import { Keycap } from './Keycap'
 export function ContextPrompt() {
   const blocked = useSim((s) => s.blocked)
   const getIn = useSim((s) => s.mode === 'walking' && (s.operatorOnRoof ? canGetInFromRoof(s.operator) : canGetIn(s.operator, s.truck, s.truckHeading)))
+  // Walking next to a crew member (a roofer on the roof, the foreman on the ground): Space talks to them.
+  const talk = useSim((s) => s.canTalk && s.talking === null)
   // Off, in the cab: how to turn the machine on (P is the Start button; tapping the dark tablet works too).
   const off = useSim((s) => s.power === 'off' && s.mode !== 'walking')
   // In the cab at the roof: 4 steps out onto it.
@@ -28,6 +30,8 @@ export function ContextPrompt() {
   }
   const prompt = off
     ? { key: 'P', text: 'Tap the screen or press P to turn on the truck', at: 'tablet' }
+    : talk
+    ? { key: 'Space', text: 'Press space to talk' }
     : getIn
     ? { key: '4', text: 'Get in the machine' }
     : load

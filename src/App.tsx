@@ -16,6 +16,7 @@ import { resetView } from './scene/cameraView'
 import { pressH, putBack } from './flows/tablet'
 import { roofStepOut, canGetInFromRoof } from './flows/roofWalk'
 import { pressStart, wake, touch, JOYSTICK_KEYS } from './flows/power'
+import { talkToRoofer } from './scene/Crew'
 
 function useModeKeys() {
   useEffect(() => {
@@ -24,6 +25,8 @@ function useModeKeys() {
       if (e.key === 'Tab') e.preventDefault()
       // The arrow keys move the cab, so they shouldn't scroll the page.
       if (e.key.startsWith('Arrow')) e.preventDefault()
+      // Space talks to a roofer; it shouldn't also scroll the page or press a focused button.
+      if (e.key === ' ') e.preventDefault()
       if (e.repeat) return
       const { mode, truck, truckHeading, operator, machineRaised, setMode, setOperator, cycleSpeed, toggleControls, showBlocked, power } = useSim.getState()
       const k = e.key.toLowerCase()
@@ -38,6 +41,11 @@ function useModeKeys() {
         touch()
       }
       // Until the machine is on, only getting in or out, the Controls panel and the view keys work.
+      // Space (talking to a roofer) works too: it doesn't need the machine.
+      if (k === ' ') {
+        if (mode === 'walking') talkToRoofer()
+        return
+      }
       if (power !== 'on' && !['4', 'k', 'c'].includes(k)) return
       switch (k) {
         // Drive mode needs the machine folded (doc: "The machine must be fully stowed").

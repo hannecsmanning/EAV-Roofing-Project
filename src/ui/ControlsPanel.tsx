@@ -50,6 +50,7 @@ const modeKeys: Record<Mode, { title: string; rows: Row[] }> = {
     rows: [
       { keys: ['W', 'A', 'S', 'D'], label: 'Walk' },
       { keys: ['4'], label: 'Get in the machine' },
+      { keys: ['Space'], label: 'Talk (roofer or foreman)' },
     ],
   },
 }

@@ -165,6 +165,10 @@ type SimState = {
   power: Power
   /** The start-up check card: which checks have passed. */
   startupCheck: { outriggers: boolean; lmi: boolean }
+  /** Walking on the roof close to a roofer: Space talks to them (Hanne). */
+  canTalk: boolean
+  /** Which crew member is talking right now (their speech bubble shows), or null. */
+  talking: number | null
   forks: Forks
   carried: string | null
   loadSpots: LoadSpot[]
@@ -224,6 +228,8 @@ export const useSim = create<SimState>((set) => ({
   tablet: 'mounted',
   power: 'off',
   startupCheck: { outriggers: false, lmi: false },
+  canTalk: false,
+  talking: null,
   forks: { lift: 0, extend: 0 },
   carried: null,
   loadSpots: LOADS.map((l) => ({ id: l.id, x: l.x, y: 0, z: l.z, heading: 0 })),

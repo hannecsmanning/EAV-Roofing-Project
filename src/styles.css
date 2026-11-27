@@ -19,7 +19,8 @@ body { font-family: var(--font-words); color: var(--text-primary); background: #
 
 /* Context prompt: floats over the 3D view, bottom center */
 .context-prompt {
-  position: absolute; left: 50%; bottom: 280px; transform: translateX(-50%);
+  /* Above the Controls panel, which can overlap it when open */
+  position: absolute; left: 50%; bottom: 280px; transform: translateX(-50%); z-index: 2;
   display: flex; align-items: center; gap: var(--spacing-md);
   padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-sm) var(--spacing-sm);
   border-radius: var(--radius-full); background: var(--surface-canvas); border: 1px solid var(--border-divider);
@@ -96,4 +97,17 @@ body { font-family: var(--font-words); color: var(--text-primary); background: #
 .context-prompt--tablet {
   left: auto; bottom: auto; right: calc(var(--spacing-xxl) + 384px); top: calc(var(--spacing-xxl) + 510px + var(--spacing-lg));
   transform: translateX(50%); white-space: nowrap;
+}
+
+/* Speech bubble over a crew member's head (the roofer saying "meow"): a white rounded bubble with a little tail */
+.speech-bubble {
+  position: relative; padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--surface-canvas); border: 2px solid var(--border-control); border-radius: var(--radius-lg);
+  font-family: var(--font-words); font-size: 22px; font-weight: 700; color: var(--text-primary);
+  white-space: nowrap; pointer-events: none; box-shadow: var(--elevation-card);
+}
+.speech-bubble::after {
+  content: ''; position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%) rotate(45deg);
+  width: 14px; height: 14px; background: var(--surface-canvas);
+  border-right: 2px solid var(--border-control); border-bottom: 2px solid var(--border-control);
 }
